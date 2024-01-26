@@ -76,6 +76,12 @@ fun SignInScreen(
             }
         }
 
+    LaunchedEffect(key1 = viewModel.isAuth()) {
+        if (viewModel.isAuth()) {
+            redirectAfterSignIn(navController)
+        }
+    }
+
     LaunchedEffect(key1 = error, key2 = googleError) {
         if (error.isNotBlank()) {
             defaultToast(context, error)
@@ -101,11 +107,11 @@ fun SignInScreen(
                 DefaultSpacer()
                 PasswordTextField(viewModel)
                 DefaultSpacer()
-                SignInButton(state, viewModel)
+                SignInButton(state, viewModel, navController)
                 DefaultSpacer()
                 OrSignInWith()
                 DefaultSpacer()
-                GoogleSignInButton(state, context, launcher)
+                GoogleSignInButton(state, context, launcher, navController)
                 DefaultSpacer()
                 RedirectToSignUp(navController)
             }
@@ -155,13 +161,23 @@ private fun PasswordTextField(viewModel: SignInViewModel) {
 }
 
 @Composable
-private fun SignInButton(state: SignInState, viewModel: SignInViewModel) {
+private fun SignInButton(
+    state: SignInState,
+    viewModel: SignInViewModel,
+    navController: NavController?,
+) {
     val text = if (state.isSignInLoading) "Signing in..." else "Sign in"
 
     DefaultButton(
         onClick = { viewModel.onEvent(SignInEvent.SignIn) },
         child = { Text(text) },
     )
+
+    LaunchedEffect(key1 = state.signInSuccess) {
+        if (state.signInSuccess != null) {
+            redirectAfterSignIn(navController)
+        }
+    }
 }
 
 @Composable
@@ -174,6 +190,7 @@ private fun GoogleSignInButton(
     state: SignInState,
     context: Context,
     launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
+    navController: NavController?,
 ) {
     val text = if (state.isGoogleSignInLoading) "Signing in..." else "Sign in with Google"
 
@@ -191,6 +208,12 @@ private fun GoogleSignInButton(
         },
         text = text,
     )
+
+    LaunchedEffect(key1 = state.googleSignInSuccess) {
+        if (state.googleSignInSuccess != null) {
+            redirectAfterSignIn(navController)
+        }
+    }
 }
 
 @Composable
@@ -201,4 +224,8 @@ private fun RedirectToSignUp(navController: NavController?) {
     ) {
         Text("Don't have an account? Sign Up")
     }
+}
+
+private fun redirectAfterSignIn(navController: NavController?) {
+    navController?.navigate(Routes.HOME)
 }

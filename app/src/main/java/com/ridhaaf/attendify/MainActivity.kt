@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ridhaaf.attendify.feature.presentation.auth.sign_in.SignInScreen
 import com.ridhaaf.attendify.feature.presentation.auth.sign_up.SignUpScreen
+import com.ridhaaf.attendify.feature.presentation.home.HomeScreen
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
 import com.ridhaaf.attendify.ui.theme.AttendifyTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,6 +51,11 @@ fun App() {
         }
         composable(Routes.SIGN_UP) {
             SignUpScreen(
+                navController = navController,
+            )
+        }
+        composable(Routes.HOME) {
+            HomeScreen(
                 navController = navController,
             )
         }

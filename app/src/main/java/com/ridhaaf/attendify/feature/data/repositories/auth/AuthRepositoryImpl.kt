@@ -138,7 +138,7 @@ class AuthRepositoryImpl @Inject constructor(
     ) {
         val now = System.currentTimeMillis()
         val user = hashMapOf(
-            "name" to name,
+            "displayName" to name,
             "email" to email,
             "photoUrl" to photoUrl,
             "createdAt" to now,

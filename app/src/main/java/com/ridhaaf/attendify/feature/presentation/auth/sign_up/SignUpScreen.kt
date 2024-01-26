@@ -30,6 +30,7 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.DefaultTextField
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
+import com.ridhaaf.attendify.feature.presentation.routes.Routes
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +69,7 @@ fun SignUpScreen(
                 DefaultSpacer()
                 ConfirmPasswordTextField(viewModel)
                 DefaultSpacer()
-                SignUpButton(state, viewModel)
+                SignUpButton(state, viewModel, navController)
                 DefaultSpacer()
                 RedirectToSignIn(navController)
             }
@@ -148,13 +149,23 @@ fun ConfirmPasswordTextField(viewModel: SignUpViewModel) {
 }
 
 @Composable
-fun SignUpButton(state: SignUpState, viewModel: SignUpViewModel) {
+fun SignUpButton(
+    state: SignUpState,
+    viewModel: SignUpViewModel,
+    navController: NavController?,
+) {
     val text = if (state.isSignUpLoading) "Signing up..." else "Sign up"
 
     DefaultButton(
         onClick = { viewModel.onEvent(SignUpEvent.SignUp) },
         child = { Text(text) },
     )
+
+    LaunchedEffect(key1 = state.signUpSuccess) {
+        if (state.signUpSuccess != null) {
+            redirectAfterSignUp(navController)
+        }
+    }
 }
 
 @Composable
@@ -165,4 +176,8 @@ fun RedirectToSignIn(navController: NavController?) {
     ) {
         Text("Already have an account? Sign In")
     }
+}
+
+private fun redirectAfterSignUp(navController: NavController?) {
+    navController?.navigate(Routes.HOME)
 }

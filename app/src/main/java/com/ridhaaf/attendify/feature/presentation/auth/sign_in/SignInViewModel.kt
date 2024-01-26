@@ -139,8 +139,4 @@ class SignInViewModel @Inject constructor(
             }
         }
     }
-
-    fun resetState() {
-        _state.value = SignInState()
-    }
 }

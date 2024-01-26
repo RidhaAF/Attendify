@@ -32,25 +32,6 @@ class SignUpViewModel @Inject constructor(
     var confirmPassword by mutableStateOf("")
         private set
 
-    private var isAuthenticated by mutableStateOf(false)
-
-    fun isAuth(): Boolean {
-        viewModelScope.launch {
-            useCase.isAuthenticated().collect { result ->
-                isAuthenticated = when (result) {
-                    is Resource.Success -> {
-                        result.data ?: false
-                    }
-
-                    else -> {
-                        false
-                    }
-                }
-            }
-        }
-        return isAuthenticated
-    }
-
     private fun signUp(name: String, email: String, password: String) {
         viewModelScope.launch {
             useCase.signUp(name, email, password).collect { result ->
@@ -123,9 +104,5 @@ class SignUpViewModel @Inject constructor(
                 signUp(name, email, password)
             }
         }
-    }
-
-    fun resetState() {
-        _state.value = SignUpState()
     }
 }
