@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
@@ -19,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +44,7 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.DefaultTextField
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
+import com.ridhaaf.attendify.feature.presentation.routes.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +106,8 @@ fun SignInScreen(
                 OrSignInWith()
                 DefaultSpacer()
                 GoogleSignInButton(state, context, launcher)
+                DefaultSpacer()
+                RedirectToSignUp(navController)
             }
         }
     }
@@ -186,4 +191,14 @@ private fun GoogleSignInButton(
         },
         text = text,
     )
+}
+
+@Composable
+private fun RedirectToSignUp(navController: NavController?) {
+    TextButton(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = { navController?.navigate(Routes.SIGN_UP) },
+    ) {
+        Text("Don't have an account? Sign Up")
+    }
 }

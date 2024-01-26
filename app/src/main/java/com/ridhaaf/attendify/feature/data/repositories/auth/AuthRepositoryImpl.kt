@@ -5,7 +5,6 @@ import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
-import com.ridhaaf.attendify.R
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.data.models.auth.User
 import com.ridhaaf.attendify.feature.domain.repositories.auth.AuthRepository

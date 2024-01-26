@@ -46,10 +46,7 @@ class SignInViewModel @Inject constructor(
         return isAuthenticated
     }
 
-    private fun signIn(
-        email: String,
-        password: String,
-    ) {
+    private fun signIn(email: String, password: String) {
         viewModelScope.launch {
             useCase.signIn(email, password).collect { result ->
                 when (result) {
@@ -123,7 +120,6 @@ class SignInViewModel @Inject constructor(
                         signInError = "Please fill in the fields",
                     )
                     return
-
                 } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                     _state.value = SignInState(
                         signInError = "Please enter a valid email address",
