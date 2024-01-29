@@ -4,6 +4,7 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 android {
@@ -40,6 +41,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {
@@ -54,17 +56,18 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.10.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-    implementation("androidx.activity:activity-compose:1.7.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
     implementation(platform("androidx.compose:compose-bom:2023.08.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material:1.5.4")
-    implementation("androidx.compose.material:material-icons-core:1.5.4")
-    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+    val materialVersion = "1.6.0"
+    implementation("androidx.compose.material:material:$materialVersion")
+    implementation("androidx.compose.material:material-icons-core:$materialVersion")
+    implementation("androidx.compose.material:material-icons-extended:$materialVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.navigation:navigation-compose:2.7.6")
@@ -94,4 +97,12 @@ dependencies {
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Google Maps
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    val mapsComposeVersion = "4.3.2"
+    implementation("com.google.maps.android:maps-compose:$mapsComposeVersion")
+    implementation("com.google.maps.android:maps-compose-utils:$mapsComposeVersion")
+    implementation("com.google.maps.android:maps-compose-widgets:$mapsComposeVersion")
 }
