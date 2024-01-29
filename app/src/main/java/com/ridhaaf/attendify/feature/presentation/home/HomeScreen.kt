@@ -103,7 +103,7 @@ fun HomeScreen(
             ) {
                 ClockSection()
                 DefaultSpacer(size = 8)
-                ClockInOutButton()
+                ClockInOutButton(navController)
             }
             PullRefreshIndicator(
                 refreshing = refreshing,
@@ -188,15 +188,19 @@ private fun ClockSection() {
 }
 
 @Composable
-private fun ClockInOutButton() {
-    val clockInTime = isBetween("08:00:00", "17:00:00")
-    val clockOutTime = isBetween("17:00:00", "22:00:00")
-    val idle = !isBetween("08:00:00", "22:00:00")
+private fun ClockInOutButton(navController: NavController?) {
+    val clockInTime = isBetween("09:00:00", "17:00:00")
+    val clockOutTime = isBetween("17:00:00", "21:00:00")
+    val idle = !isBetween("09:00:00", "21:00:00")
 
     val enabled = !idle
 
     DefaultButton(
-        onClick = {},
+        onClick = {
+            when {
+                clockInTime -> navController?.navigate(Routes.LOCATION)
+            }
+        },
         enabled = enabled,
     ) {
         val buttonText = when {
