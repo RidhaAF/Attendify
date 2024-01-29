@@ -5,4 +5,5 @@ object Routes {
     const val SIGN_UP = "sign-up"
     const val HOME = "home"
     const val LOCATION = "location"
+    const val CAMERA = "camera"
 }

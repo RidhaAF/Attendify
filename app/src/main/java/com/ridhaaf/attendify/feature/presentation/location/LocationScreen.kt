@@ -44,6 +44,7 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
+import com.ridhaaf.attendify.feature.presentation.routes.Routes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +64,10 @@ fun LocationScreen(
                 if (it.value) {
                     viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
                 } else {
-                    defaultToast(context, "Permission denied, please allow the permission from Settings")
+                    defaultToast(
+                        context,
+                        "Permission denied, please allow the permission from Settings"
+                    )
                 }
             }
         }
@@ -103,7 +107,7 @@ fun LocationScreen(
                 ) {
                     MapsContent()
                 }
-                LocationContent(location)
+                LocationContent(location, navController)
             }
         }
     }
@@ -144,7 +148,7 @@ private fun MapsContent() {
 }
 
 @Composable
-private fun LocationContent(location: Location? = null) {
+private fun LocationContent(location: Location? = null, navController: NavController?) {
     val isInsideRadius = location?.let { isInRadius(it) } ?: false
     val text = if (isInsideRadius) "You're in the radius area" else "You're not in the radius area"
 
@@ -162,7 +166,9 @@ private fun LocationContent(location: Location? = null) {
         Text(text)
         DefaultSpacer()
         DefaultButton(
-            onClick = {},
+            onClick = {
+                navController?.navigate(Routes.CAMERA)
+            },
             enabled = isInsideRadius,
         ) {
             Text("Next")
