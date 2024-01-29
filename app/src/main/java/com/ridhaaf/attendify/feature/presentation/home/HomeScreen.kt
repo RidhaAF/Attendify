@@ -1,8 +1,11 @@
 package com.ridhaaf.attendify.feature.presentation.home
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,9 +26,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
 
@@ -92,10 +97,36 @@ fun HomeScreen(
 
 @Composable
 private fun UserSection(state: HomeState) {
-    state.userSuccess?.let { user ->
-        val text = if (state.isUserLoading) "Loading..."
-        else "Welcome, ${user.displayName}"
-        Text(text)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        UserDisplayName(state)
+        UserPhoto(state)
+    }
+}
+
+@Composable
+private fun UserDisplayName(state: HomeState) {
+    val user = state.userSuccess
+    val text = if (state.isUserLoading) "Loading..."
+    else user?.displayName
+
+    text?.let {
+        Text(
+            it,
+            overflow = TextOverflow.Ellipsis,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun UserPhoto(state: HomeState) {
+    val user = state.userSuccess
+
+    user?.let {
+        DefaultPhotoProfile(user = it)
     }
 }
 
