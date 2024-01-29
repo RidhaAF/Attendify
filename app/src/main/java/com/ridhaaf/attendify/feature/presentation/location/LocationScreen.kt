@@ -1,5 +1,6 @@
 package com.ridhaaf.attendify.feature.presentation.location
 
+import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
 import android.location.Location
@@ -42,6 +43,7 @@ import com.ridhaaf.attendify.core.utils.isInRadius
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
+import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,21 +58,27 @@ fun LocationScreen(
 
     val fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
     val requestPermissionLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
-                viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            permissions.entries.forEach {
+                if (it.value) {
+                    viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
+                } else {
+                    defaultToast(context, "Permission denied, please allow the permission from Settings")
+                }
             }
         }
 
     LaunchedEffect(Unit) {
         val isPermissionGranted = ContextCompat.checkSelfPermission(
             context, ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+            context, ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
         if (isPermissionGranted) {
             viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
         } else {
-            requestPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+            requestPermissionLauncher.launch(arrayOf(ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION))
         }
     }
 
@@ -105,7 +113,7 @@ fun LocationScreen(
 private fun MapsContent() {
     val officeLocation = LatLng(OfficeLocation.LATITUDE, OfficeLocation.LONGITUDE)
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(officeLocation, 30f)
+        position = CameraPosition.fromLatLngZoom(officeLocation, 18f)
     }
     val mapProperties by remember {
         mutableStateOf(
