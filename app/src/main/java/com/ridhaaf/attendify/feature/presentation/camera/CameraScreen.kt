@@ -3,22 +3,16 @@ package com.ridhaaf.attendify.feature.presentation.camera
 import android.Manifest.permission.CAMERA
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.LinearLayout
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.view.LifecycleCameraController
-import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Camera
+import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,17 +21,24 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.LifecycleOwner
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import com.ridhaaf.attendify.BuildConfig
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
-import java.util.concurrent.Executor
+import java.io.File
+import java.text.DateFormat.getDateInstance
+import java.util.Date
+import java.util.Objects
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,14 +47,25 @@ fun CameraScreen(
     navController: NavController? = null,
 ) {
     val context: Context = LocalContext.current
-    val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
-    val cameraController: LifecycleCameraController =
-        remember { LifecycleCameraController(context) }
+    val file = context.createImageFile()
+    val uri = FileProvider.getUriForFile(
+        Objects.requireNonNull(context), BuildConfig.APPLICATION_ID + ".provider", file
+    )
+
+    var capturedImageUri by remember {
+        mutableStateOf<Uri>(Uri.EMPTY)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
+        if (it) {
+            capturedImageUri = uri
+        }
+    }
 
     val requestCameraPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                cameraController.bindToLifecycle(lifecycleOwner)
+                cameraLauncher.launch(uri)
             } else {
                 defaultToast(
                     context,
@@ -68,7 +80,7 @@ fun CameraScreen(
         ) == PackageManager.PERMISSION_GRANTED
 
         if (isPermissionGranted) {
-            cameraController.bindToLifecycle(lifecycleOwner)
+            cameraLauncher.launch(uri)
         } else {
             requestCameraPermissionLauncher.launch(CAMERA)
         }
@@ -76,52 +88,43 @@ fun CameraScreen(
 
     Scaffold(topBar = {
         TopAppBar(
-            title = { Text("") },
+            title = { Text("Take a Selfie") },
+            modifier = modifier.background(Color.Transparent),
             navigationIcon = {
                 DefaultBackButton(navController)
             },
         )
     }, floatingActionButton = {
-        FloatingActionButton(
-            onClick = {
-                val mainExecutor: Executor = ContextCompat.getMainExecutor(context)
-
-                cameraController.takePicture(
-                    mainExecutor,
-                    object : ImageCapture.OnImageCapturedCallback() {
-                        override fun onCaptureSuccess(image: ImageProxy) {
-                            image.close()
-                        }
-
-                        override fun onError(exception: ImageCaptureException) {
-                            Log.e("CameraContent", "Error capturing image", exception)
-                        }
-                    },
-                )
-            },
-        ) {
+        FloatingActionButton(onClick = { cameraLauncher.launch(uri) }) {
             Icon(
-                imageVector = Icons.Rounded.Camera, contentDescription = "Camera"
+                imageVector = Icons.Rounded.CameraAlt,
+                contentDescription = "Camera",
             )
         }
     }) {
         Box(
-            modifier = modifier.padding(it),
+            modifier = modifier
+                .fillMaxSize()
+                .padding(it),
         ) {
-            Column(
-                modifier = modifier.fillMaxSize(),
-            ) {
-                AndroidView(modifier = Modifier.fillMaxSize(), factory = { context ->
-                    PreviewView(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                        scaleType = PreviewView.ScaleType.FILL_START
-                    }.also { previewView ->
-                        previewView.controller = cameraController
-                        cameraController.bindToLifecycle(lifecycleOwner)
-                    }
-                })
+            if (capturedImageUri.path?.isNotEmpty() == true) {
+                Image(
+                    modifier = Modifier.fillMaxSize(),
+                    painter = rememberAsyncImagePainter(capturedImageUri),
+                    contentDescription = "Captured Image",
+                )
             }
         }
     }
+}
+
+private fun Context.createImageFile(): File {
+    // Create an image file name
+    val timeStamp = getDateInstance().format(Date())
+    val imageFileName = "JPEG_" + timeStamp + "_"
+    return File.createTempFile(
+        imageFileName, /* prefix */
+        ".jpg", /* suffix */
+        externalCacheDir      /* directory */
+    )
 }
