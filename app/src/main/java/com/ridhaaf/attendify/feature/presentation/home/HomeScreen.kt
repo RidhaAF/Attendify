@@ -186,9 +186,7 @@ private fun ClockSection() {
 
 @Composable
 private fun ClockInOutButton(state: HomeState, navController: NavController?) {
-    val idle = !isBetween("09:00:00", "21:00:00")
-
-    val enabled = !idle
+    val enabled = getCurrentTime() in "09:00:00".."21:00:00"
 
     val user = state.userSuccess
     val status = user?.status ?: false
@@ -217,9 +215,4 @@ private fun getCurrentTime(): String {
     val currentTime = System.currentTimeMillis()
     val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     return dateFormat.format(currentTime)
-}
-
-private fun isBetween(startTime: String, endTime: String): Boolean {
-    val currentTime = getCurrentTime()
-    return currentTime in startTime..endTime
 }
