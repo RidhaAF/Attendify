@@ -1,5 +1,6 @@
 package com.ridhaaf.attendify.feature.presentation.home
 
+import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Logout
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -23,16 +24,27 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
+import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
+import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -42,28 +54,20 @@ fun HomeScreen(
     navController: NavController? = null,
 ) {
     val state = viewModel.state.value
-    val error = state.error
     val userError = state.userError
     val context = LocalContext.current
     val refreshing = viewModel.isRefreshing.value
     val pullRefreshState = rememberPullRefreshState(
         refreshing = refreshing,
-        onRefresh = {
-            viewModel.refresh()
-        },
+        onRefresh = { viewModel.onEvent(HomeEvent.Refresh) },
     )
     val verticalScrollState = rememberScrollState()
 
-    LaunchedEffect(key1 = error, key2 = userError) {
-        if (error.isNotBlank()) {
-            defaultToast(context, error)
-        }
-
+    LaunchedEffect(key1 = userError) {
         if (userError.isNotBlank()) {
             defaultToast(context, userError)
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -77,15 +81,27 @@ fun HomeScreen(
     ) {
         Box(
             modifier = modifier
+                .fillMaxSize()
                 .pullRefresh(pullRefreshState)
                 .verticalScroll(verticalScrollState)
                 .padding(it),
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(16.dp),
-            ) {}
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (state.isUserLoading) {
+                    DefaultProgressIndicator()
+                } else {
+                    ClockSection()
+                    DefaultSpacer(size = 8)
+                    ClockInOutButton(state, navController)
+                }
+            }
             PullRefreshIndicator(
                 refreshing = refreshing,
                 state = pullRefreshState,
@@ -138,7 +154,7 @@ private fun SignOutButton(
 ) {
     IconButton(onClick = { viewModel.onEvent(HomeEvent.SignOut) }) {
         Icon(
-            imageVector = Icons.Rounded.Logout,
+            imageVector = Icons.AutoMirrored.Rounded.Logout,
             contentDescription = "Sign Out",
         )
     }
@@ -148,4 +164,50 @@ private fun SignOutButton(
             navController?.navigate(Routes.SIGN_IN)
         }
     }
+}
+
+@Composable
+private fun ClockSection() {
+    var currentTime by remember { mutableStateOf(getCurrentTime()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = getCurrentTime()
+            delay(1000)
+        }
+    }
+
+    Text(
+        currentTime,
+        fontSize = 48.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun ClockInOutButton(state: HomeState, navController: NavController?) {
+    val enabled = getCurrentTime() in "09:00:00".."21:00:00"
+
+    val user = state.userSuccess
+    val status = user?.status ?: false
+
+    DefaultButton(
+        onClick = {
+            if (enabled) {
+                val dateTime = System.currentTimeMillis()
+                navController?.navigate("location/$status/$dateTime")
+            }
+        },
+        enabled = enabled,
+    ) {
+        val buttonText = if (status) "Clock Out" else "Clock In"
+
+        Text(buttonText)
+    }
+}
+
+private fun getCurrentTime(): String {
+    val currentTime = System.currentTimeMillis()
+    val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    return dateFormat.format(currentTime)
 }
