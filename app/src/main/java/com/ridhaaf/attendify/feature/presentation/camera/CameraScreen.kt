@@ -4,7 +4,6 @@ import android.Manifest.permission.CAMERA
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -16,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CameraAlt
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -40,8 +39,12 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.ridhaaf.attendify.BuildConfig
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
+import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
+import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.DateFormat.getDateInstance
 import java.util.Date
@@ -75,15 +78,12 @@ fun CameraScreen(
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
         if (it) {
-            Log.d("CameraScreen", "args: $status, $dateTime, $latitude, $longitude")
             val data = mutableMapOf(
                 "status" to status as Any,
                 "dateTime" to dateTime as Any,
                 "latitude" to latitude as Any,
                 "longitude" to longitude as Any,
             ).toMap()
-            Log.d("CameraScreen", "data: $data")
-
             capturedImageUri = uri
 
             if (status) {
@@ -103,29 +103,28 @@ fun CameraScreen(
             if (isGranted) {
                 cameraLauncher.launch(uri)
             } else {
-                defaultToast(
-                    context,
-                    "Camera permission is required to use camera",
-                )
+                defaultToast(context, "Camera permission is required to use camera ")
             }
         }
 
     LaunchedEffect(Unit) {
-        val isPermissionGranted = ContextCompat.checkSelfPermission(
-            context, CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
+        withContext(Dispatchers.IO) {
+            val isPermissionGranted = ContextCompat.checkSelfPermission(
+                context, CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
 
-        if (isPermissionGranted) {
-            cameraLauncher.launch(uri)
-        } else {
-            requestCameraPermissionLauncher.launch(CAMERA)
+            if (isPermissionGranted) {
+                cameraLauncher.launch(uri)
+            } else {
+                requestCameraPermissionLauncher.launch(CAMERA)
+            }
         }
     }
 
     LaunchedEffect(key1 = clockIn, key2 = clockInError) {
         if (clockIn) {
-            defaultToast(context, "Clock In Success")
             navController?.navigate(Routes.HOME)
+            defaultToast(context, "Clock In Success")
         }
 
         if (clockInError.isNotBlank()) {
@@ -135,8 +134,8 @@ fun CameraScreen(
 
     LaunchedEffect(key1 = clockOut, key2 = clockOutError) {
         if (clockOut) {
-            defaultToast(context, "Clock Out Success")
             navController?.navigate(Routes.HOME)
+            defaultToast(context, "Clock Out Success")
         }
 
         if (clockOutError.isNotBlank()) {
@@ -155,7 +154,10 @@ fun CameraScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { cameraLauncher.launch(uri) }) {
+            FloatingActionButton(
+                onClick = { cameraLauncher.launch(uri) },
+                containerColor = MaterialTheme.colorScheme.primary,
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.CameraAlt,
                     contentDescription = "Camera",
@@ -174,8 +176,10 @@ fun CameraScreen(
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    CircularProgressIndicator()
-                    Text("Loading...")
+                    DefaultProgressIndicator()
+                    DefaultSpacer()
+                    val text = if (status) "Clocking Out..." else "Clocking In..."
+                    Text(text)
                 }
             } else {
                 if (capturedImageUri.path?.isNotEmpty() == true) {

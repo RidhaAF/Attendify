@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
@@ -40,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
+import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
@@ -95,7 +95,7 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (state.isUserLoading) {
-                    CircularProgressIndicator()
+                    DefaultProgressIndicator()
                 } else {
                     ClockSection()
                     DefaultSpacer(size = 8)
@@ -186,7 +186,7 @@ private fun ClockSection() {
 
 @Composable
 private fun ClockInOutButton(state: HomeState, navController: NavController?) {
-    val enabled = getCurrentTime() in "09:00:00".."21:00:00"
+    val enabled = getCurrentTime() in "09:00:00".."23:00:00"
 
     val user = state.userSuccess
     val status = user?.status ?: false
@@ -195,12 +195,7 @@ private fun ClockInOutButton(state: HomeState, navController: NavController?) {
         onClick = {
             if (enabled) {
                 val dateTime = System.currentTimeMillis()
-                navController?.navigate("location/$status/$dateTime") {
-                    launchSingleTop = true
-                    popUpTo(Routes.LOCATION) {
-                        saveState = true
-                    }
-                }
+                navController?.navigate("location/$status/$dateTime")
             }
         },
         enabled = enabled,

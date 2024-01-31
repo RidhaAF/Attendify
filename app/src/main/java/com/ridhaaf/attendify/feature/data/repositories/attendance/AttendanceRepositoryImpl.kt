@@ -3,7 +3,9 @@ package com.ridhaaf.attendify.feature.data.repositories.attendance
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.location.Location
 import android.net.Uri
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
@@ -97,6 +99,24 @@ class AttendanceRepositoryImpl @Inject constructor(
             }
 
         } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
+        }
+    }
+
+    override fun getEmployeeLocation(
+        fusedLocationProviderClient: FusedLocationProviderClient,
+    ): Flow<Resource<Location>> = flow {
+        emit(Resource.Loading())
+
+        try {
+            val result = fusedLocationProviderClient.lastLocation.await()
+
+            if (result != null) {
+                emit(Resource.Success(result))
+            } else {
+                emit(Resource.Error("Failed to get location"))
+            }
+        } catch (e: SecurityException) {
             emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
         }
     }

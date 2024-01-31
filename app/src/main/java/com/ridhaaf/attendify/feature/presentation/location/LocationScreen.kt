@@ -43,9 +43,11 @@ import com.ridhaaf.attendify.core.utils.OfficeLocation
 import com.ridhaaf.attendify.core.utils.isInRadius
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
+import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
-import com.ridhaaf.attendify.feature.presentation.routes.Routes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,24 +70,30 @@ fun LocationScreen(
                     viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
                 } else {
                     defaultToast(
-                        context,
-                        "Permission denied, please allow the permission from Settings"
+                        context, "Permission denied, please allow the permission from Settings"
                     )
                 }
             }
         }
 
     LaunchedEffect(Unit) {
-        val isPermissionGranted = ContextCompat.checkSelfPermission(
-            context, ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-            context, ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+        withContext(Dispatchers.IO) {
+            val isPermissionGranted = ContextCompat.checkSelfPermission(
+                context, ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                context, ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
 
-        if (isPermissionGranted) {
-            viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
-        } else {
-            requestPermissionLauncher.launch(arrayOf(ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION))
+            if (isPermissionGranted) {
+                viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
+            } else {
+                requestPermissionLauncher.launch(
+                    arrayOf(
+                        ACCESS_FINE_LOCATION,
+                        ACCESS_COARSE_LOCATION,
+                    )
+                )
+            }
         }
     }
 
@@ -108,7 +116,11 @@ fun LocationScreen(
                 Box(
                     modifier = Modifier.weight(0.7f),
                 ) {
-                    MapsContent()
+                    if (state.isLoading) {
+                        DefaultProgressIndicator()
+                    } else {
+                        MapsContent()
+                    }
                 }
                 LocationContent(status, dateTime, location, navController)
             }
@@ -182,12 +194,7 @@ private fun LocationContent(
             onClick = {
                 val latitude = location?.latitude ?: 0.0
                 val longitude = location?.longitude ?: 0.0
-                navController?.navigate("camera/$status/$dateTime/$latitude/$longitude") {
-                    launchSingleTop = true
-                    popUpTo(Routes.CAMERA) {
-                        saveState = true
-                    }
-                }
+                navController?.navigate("camera/$status/$dateTime/$latitude/$longitude")
             },
             enabled = isInsideRadius,
         ) {
