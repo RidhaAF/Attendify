@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.domain.usecases.auth.AuthUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,13 +25,13 @@ class HomeViewModel @Inject constructor(
         refresh()
     }
 
-    fun refresh() {
+    private fun refresh() {
         getCurrentUser()
     }
 
     private fun getCurrentUser() {
         viewModelScope.launch {
-            authUseCase.getCurrentUser().collect { result ->
+            authUseCase.getCurrentUser().collectLatest { result ->
                 when (result) {
                     is Resource.Loading -> {
                         _state.value = HomeState(
@@ -88,6 +89,10 @@ class HomeViewModel @Inject constructor(
 
     fun onEvent(event: HomeEvent) {
         when (event) {
+            is HomeEvent.Refresh -> {
+                refresh()
+            }
+
             is HomeEvent.SignOut -> {
                 signOut()
             }

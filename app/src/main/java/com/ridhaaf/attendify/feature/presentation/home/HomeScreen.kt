@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Logout
+import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -53,28 +54,20 @@ fun HomeScreen(
     navController: NavController? = null,
 ) {
     val state = viewModel.state.value
-    val error = state.error
     val userError = state.userError
     val context = LocalContext.current
     val refreshing = viewModel.isRefreshing.value
     val pullRefreshState = rememberPullRefreshState(
         refreshing = refreshing,
-        onRefresh = {
-            viewModel.refresh()
-        },
+        onRefresh = { viewModel.onEvent(HomeEvent.Refresh) },
     )
     val verticalScrollState = rememberScrollState()
 
-    LaunchedEffect(key1 = error, key2 = userError) {
-        if (error.isNotBlank()) {
-            defaultToast(context, error)
-        }
-
+    LaunchedEffect(key1 = userError) {
         if (userError.isNotBlank()) {
             defaultToast(context, userError)
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -101,9 +94,13 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                ClockSection()
-                DefaultSpacer(size = 8)
-                ClockInOutButton(navController)
+                if (state.isUserLoading) {
+                    CircularProgressIndicator()
+                } else {
+                    ClockSection()
+                    DefaultSpacer(size = 8)
+                    ClockInOutButton(state, navController)
+                }
             }
             PullRefreshIndicator(
                 refreshing = refreshing,
@@ -157,7 +154,7 @@ private fun SignOutButton(
 ) {
     IconButton(onClick = { viewModel.onEvent(HomeEvent.SignOut) }) {
         Icon(
-            imageVector = Icons.Rounded.Logout,
+            imageVector = Icons.AutoMirrored.Rounded.Logout,
             contentDescription = "Sign Out",
         )
     }
@@ -188,26 +185,29 @@ private fun ClockSection() {
 }
 
 @Composable
-private fun ClockInOutButton(navController: NavController?) {
-    val clockInTime = isBetween("09:00:00", "17:00:00")
-    val clockOutTime = isBetween("17:00:00", "21:00:00")
+private fun ClockInOutButton(state: HomeState, navController: NavController?) {
     val idle = !isBetween("09:00:00", "21:00:00")
 
     val enabled = !idle
 
+    val user = state.userSuccess
+    val status = user?.status ?: false
+
     DefaultButton(
         onClick = {
-            when {
-                clockInTime -> navController?.navigate(Routes.LOCATION)
+            if (enabled) {
+                val dateTime = System.currentTimeMillis()
+                navController?.navigate("location/$status/$dateTime") {
+                    launchSingleTop = true
+                    popUpTo(Routes.LOCATION) {
+                        saveState = true
+                    }
+                }
             }
         },
         enabled = enabled,
     ) {
-        val buttonText = when {
-            clockInTime -> "Clock In"
-            clockOutTime -> "Clock Out"
-            else -> "Clock In"
-        }
+        val buttonText = if (status) "Clock Out" else "Clock In"
 
         Text(buttonText)
     }

@@ -108,18 +108,24 @@ class AuthRepositoryImpl @Inject constructor(
                 val isSignedInWithGoogle =
                     result.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
 
+                val id = result.uid
+                val document = firestore.collection("users").document(id).get().await()
+
                 val user = User()
                 if (isSignedInWithGoogle) {
+                    user.id = id
                     user.displayName = result.displayName ?: ""
                     user.email = result.email ?: ""
                     user.photoUrl = result.photoUrl.toString()
+                    user.status = document["status"] as Boolean
+                    user.createdAt = document["createdAt"] as Long
                 } else {
-                    val id = result.uid
-                    val document = firestore.collection("users").document(id).get().await()
-
-                    user.displayName = document["displayName"] as String? ?: ""
-                    user.email = document["email"] as String? ?: ""
-                    user.photoUrl = document["photoUrl"] as String?
+                    user.id = id
+                    user.displayName = document["displayName"].toString()
+                    user.email = document["email"].toString()
+                    user.photoUrl = document["photoUrl"].toString()
+                    user.status = document["status"] as Boolean
+                    user.createdAt = document["createdAt"] as Long
                 }
                 emit(Resource.Success(user))
             } else {
@@ -136,11 +142,13 @@ class AuthRepositoryImpl @Inject constructor(
         email: String,
         photoUrl: String? = null,
     ) {
+        val status = false
         val now = System.currentTimeMillis()
         val user = hashMapOf(
             "displayName" to name,
             "email" to email,
             "photoUrl" to photoUrl,
+            "status" to status,
             "createdAt" to now,
         )
         firestore.collection("users").document(id).set(user).await()

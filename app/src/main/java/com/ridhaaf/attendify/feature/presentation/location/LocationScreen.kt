@@ -33,6 +33,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.AdvancedMarker
+import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
@@ -52,6 +53,8 @@ fun LocationScreen(
     modifier: Modifier = Modifier,
     viewModel: LocationViewModel = hiltViewModel(),
     navController: NavController? = null,
+    status: Boolean = false,
+    dateTime: Long? = 0L,
 ) {
     val state = viewModel.state.value
     val location = state.location
@@ -107,7 +110,7 @@ fun LocationScreen(
                 ) {
                     MapsContent()
                 }
-                LocationContent(location, navController)
+                LocationContent(status, dateTime, location, navController)
             }
         }
     }
@@ -144,11 +147,21 @@ private fun MapsContent() {
             state = MarkerState(position = officeLocation),
             title = "Office",
         )
+        Circle(
+            center = officeLocation,
+            radius = 100.0,
+            strokeColor = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 
 @Composable
-private fun LocationContent(location: Location? = null, navController: NavController?) {
+private fun LocationContent(
+    status: Boolean = false,
+    dateTime: Long? = 0L,
+    location: Location? = null,
+    navController: NavController?,
+) {
     val isInsideRadius = location?.let { isInRadius(it) } ?: false
     val text = if (isInsideRadius) "You're in the radius area" else "You're not in the radius area"
 
@@ -167,7 +180,14 @@ private fun LocationContent(location: Location? = null, navController: NavContro
         DefaultSpacer()
         DefaultButton(
             onClick = {
-                navController?.navigate(Routes.CAMERA)
+                val latitude = location?.latitude ?: 0.0
+                val longitude = location?.longitude ?: 0.0
+                navController?.navigate("camera/$status/$dateTime/$latitude/$longitude") {
+                    launchSingleTop = true
+                    popUpTo(Routes.CAMERA) {
+                        saveState = true
+                    }
+                }
             },
             enabled = isInsideRadius,
         ) {
