@@ -186,7 +186,7 @@ private fun ClockSection() {
 
 @Composable
 private fun ClockInOutButton(state: HomeState, navController: NavController?) {
-    val enabled = getCurrentTime() in "09:00:00".."23:00:00"
+    val enabled = getCurrentTime() in "09:00:00".."21:00:00"
 
     val user = state.userSuccess
     val status = user?.status ?: false

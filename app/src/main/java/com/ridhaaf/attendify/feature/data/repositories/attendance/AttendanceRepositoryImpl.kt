@@ -8,15 +8,18 @@ import android.net.Uri
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.data.models.attendance.Attendance
 import com.ridhaaf.attendify.feature.domain.repositories.attendance.AttendanceRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import javax.inject.Inject
@@ -48,9 +51,13 @@ class AttendanceRepositoryImpl @Inject constructor(
                 createdAt = System.currentTimeMillis(),
             )
 
-            attendancesCollection().document(docId).set(attendance).await()
+            val batch = firestore.batch()
+            val attendanceRef = attendancesCollection().document(docId)
+            batch.set(attendanceRef, attendance)
+            batch.update(userStatusReference(userId), "status", true)
 
-            updateUserStatus(userId, true)
+            batch.commit().await()
+
             emit(Resource.Success(true))
         } catch (e: Exception) {
             emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
@@ -122,33 +129,35 @@ class AttendanceRepositoryImpl @Inject constructor(
     }
 
     private suspend fun uploadAttendancePhoto(context: Context, photo: Uri): String {
-        try {
-            val storagePath = "attendance"
+        return withContext(Dispatchers.IO) {
+            try {
+                val storagePath = "attendance"
 
-            val filename = "${UUID.randomUUID()}.jpg"
+                val filename = "${UUID.randomUUID()}.jpg"
 
-            // Convert the Uri to a Bitmap
-            val photoBitmap =
-                BitmapFactory.decodeStream(context.contentResolver.openInputStream(photo))
-                    ?: throw NullPointerException("Failed to decode the photo")
+                // Convert the Uri to a Bitmap
+                val photoBitmap =
+                    BitmapFactory.decodeStream(context.contentResolver.openInputStream(photo))
+                        ?: throw NullPointerException("Failed to decode the photo")
 
-            // Convert the Bitmap to bytes
-            val baos = ByteArrayOutputStream()
-            photoBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-            val data = baos.toByteArray()
+                // Convert the Bitmap to bytes
+                val baos = ByteArrayOutputStream()
+                photoBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                val data = baos.toByteArray()
 
-            // Close the ByteArrayOutputStream
-            baos.close()
+                // Close the ByteArrayOutputStream
+                baos.close()
 
-            val userId = auth.currentUser?.uid
+                val userId = auth.currentUser?.uid
 
-            // Upload the photo to Firebase Storage
-            val storageRef = storage.reference.child("$storagePath/$userId/$filename")
-            storageRef.putBytes(data).await()
+                // Upload the photo to Firebase Storage
+                val storageRef = storage.reference.child("$storagePath/$userId/$filename")
+                storageRef.putBytes(data).await()
 
-            return storageRef.downloadUrl.await().toString()
-        } catch (e: Exception) {
-            throw Exception(e.localizedMessage ?: "Upload photo failed, please try again later")
+                return@withContext storageRef.downloadUrl.await().toString()
+            } catch (e: Exception) {
+                throw Exception(e.localizedMessage ?: "Upload photo failed, please try again later")
+            }
         }
     }
 
@@ -178,5 +187,9 @@ class AttendanceRepositoryImpl @Inject constructor(
 
     private fun attendancesCollection(): CollectionReference {
         return firestore.collection("attendances")
+    }
+
+    private fun userStatusReference(userId: String): DocumentReference {
+        return firestore.collection("users").document(userId)
     }
 }
