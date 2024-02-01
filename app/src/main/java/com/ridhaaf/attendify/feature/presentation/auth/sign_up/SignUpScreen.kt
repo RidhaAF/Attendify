@@ -179,5 +179,9 @@ fun RedirectToSignIn(navController: NavController?) {
 }
 
 private fun redirectAfterSignUp(navController: NavController?) {
-    navController?.navigate(Routes.HOME)
+    navController?.navigate(Routes.BIOMETRIC) {
+        popUpTo(Routes.SIGN_UP) {
+            inclusive = true
+        }
+    }
 }

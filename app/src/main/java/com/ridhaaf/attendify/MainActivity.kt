@@ -1,7 +1,6 @@
 package com.ridhaaf.attendify
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -9,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,6 +21,7 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.google.firebase.initialize
 import com.ridhaaf.attendify.feature.presentation.auth.sign_in.SignInScreen
 import com.ridhaaf.attendify.feature.presentation.auth.sign_up.SignUpScreen
+import com.ridhaaf.attendify.feature.presentation.biometric.BiometricScreen
 import com.ridhaaf.attendify.feature.presentation.camera.CameraScreen
 import com.ridhaaf.attendify.feature.presentation.home.HomeScreen
 import com.ridhaaf.attendify.feature.presentation.location.LocationScreen
@@ -29,7 +30,7 @@ import com.ridhaaf.attendify.ui.theme.AttendifyTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Firebase.initialize(context = this)
@@ -66,6 +67,11 @@ fun App() {
         }
         composable(Routes.SIGN_UP) {
             SignUpScreen(
+                navController = navController,
+            )
+        }
+        composable(Routes.BIOMETRIC) {
+            BiometricScreen(
                 navController = navController,
             )
         }
