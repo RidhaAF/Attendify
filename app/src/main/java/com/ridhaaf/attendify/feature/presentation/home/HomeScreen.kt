@@ -1,6 +1,11 @@
 package com.ridhaaf.attendify.feature.presentation.home
 
+import android.Manifest.permission.POST_NOTIFICATIONS
+import android.content.pm.PackageManager
 import android.icu.text.SimpleDateFormat
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
@@ -43,7 +49,9 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndi
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class)
@@ -62,6 +70,30 @@ fun HomeScreen(
         onRefresh = { viewModel.onEvent(HomeEvent.Refresh) },
     )
     val verticalScrollState = rememberScrollState()
+
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (!isGranted) {
+                defaultToast(
+                    context,
+                    "Permission denied, please allow the permission from Settings",
+                )
+            }
+        }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val isPermissionGranted = ContextCompat.checkSelfPermission(
+                    context, POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (!isPermissionGranted) {
+                    requestPermissionLauncher.launch(POST_NOTIFICATIONS)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(key1 = userError) {
         if (userError.isNotBlank()) {
