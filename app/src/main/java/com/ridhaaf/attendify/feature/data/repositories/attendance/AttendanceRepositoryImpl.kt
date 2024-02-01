@@ -142,7 +142,7 @@ class AttendanceRepositoryImpl @Inject constructor(
 
                 // Convert the Bitmap to bytes
                 val baos = ByteArrayOutputStream()
-                photoBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                photoBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
                 val data = baos.toByteArray()
 
                 // Close the ByteArrayOutputStream

@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.ridhaaf.attendify.BuildConfig
+import com.ridhaaf.attendify.core.utils.NotificationService
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
@@ -125,6 +126,10 @@ fun CameraScreen(
         if (clockIn) {
             navController?.navigate(Routes.HOME)
             defaultToast(context, "Clock In Success")
+            NotificationService(context).showBasicNotification(
+                "Clock In",
+                "You have successfully clocked in",
+            )
         }
 
         if (clockInError.isNotBlank()) {
@@ -136,6 +141,10 @@ fun CameraScreen(
         if (clockOut) {
             navController?.navigate(Routes.HOME)
             defaultToast(context, "Clock Out Success")
+            NotificationService(context).showBasicNotification(
+                "Clock Out",
+                "You have successfully clocked out",
+            )
         }
 
         if (clockOutError.isNotBlank()) {
