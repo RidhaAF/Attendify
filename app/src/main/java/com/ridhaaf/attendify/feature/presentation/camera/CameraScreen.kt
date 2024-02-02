@@ -124,7 +124,7 @@ fun CameraScreen(
 
     LaunchedEffect(key1 = clockIn, key2 = clockInError) {
         if (clockIn) {
-            navController?.navigate(Routes.HOME)
+            navigateToHome(navController)
             defaultToast(context, "Clock In Success")
             NotificationService(context).showBasicNotification(
                 "Clock In",
@@ -139,7 +139,7 @@ fun CameraScreen(
 
     LaunchedEffect(key1 = clockOut, key2 = clockOutError) {
         if (clockOut) {
-            navController?.navigate(Routes.HOME)
+            navigateToHome(navController)
             defaultToast(context, "Clock Out Success")
             NotificationService(context).showBasicNotification(
                 "Clock Out",
@@ -212,4 +212,12 @@ private fun Context.createImageFile(): File {
         ".jpg", /* suffix */
         externalCacheDir /* directory */
     )
+}
+
+private fun navigateToHome(navController: NavController?) {
+    navController?.navigate(Routes.HOME) {
+        popUpTo(Routes.CAMERA) {
+            inclusive = true
+        }
+    }
 }

@@ -4,6 +4,7 @@ import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.data.models.auth.User
@@ -109,21 +110,21 @@ class AuthRepositoryImpl @Inject constructor(
                     result.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
 
                 val id = result.uid
-                val document = firestore.collection("users").document(id).get().await()
+                val document = usersCollection().document(id).get().await()
 
                 val user = User()
                 if (isSignedInWithGoogle) {
                     user.id = id
                     user.displayName = result.displayName ?: ""
                     user.email = result.email ?: ""
-                    user.photoUrl = result.photoUrl.toString()
+                    user.photoUrl = result.photoUrl as String? ?: ""
                     user.status = document["status"] as Boolean
                     user.createdAt = document["createdAt"] as Long
                 } else {
                     user.id = id
-                    user.displayName = document["displayName"].toString()
-                    user.email = document["email"].toString()
-                    user.photoUrl = document["photoUrl"].toString()
+                    user.displayName = document["displayName"] as String
+                    user.email = document["email"] as String
+                    user.photoUrl = document["photoUrl"] as String? ?: ""
                     user.status = document["status"] as Boolean
                     user.createdAt = document["createdAt"] as Long
                 }
@@ -151,6 +152,10 @@ class AuthRepositoryImpl @Inject constructor(
             "status" to status,
             "createdAt" to now,
         )
-        firestore.collection("users").document(id).set(user).await()
+        usersCollection().document(id).set(user).await()
+    }
+
+    private fun usersCollection(): CollectionReference {
+        return firestore.collection("users")
     }
 }

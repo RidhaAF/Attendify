@@ -1,6 +1,7 @@
 package com.ridhaaf.attendify.feature.presentation.home
 
 import android.Manifest.permission.POST_NOTIFICATIONS
+import android.content.Context
 import android.content.pm.PackageManager
 import android.icu.text.SimpleDateFormat
 import android.os.Build
@@ -18,12 +19,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.MoreTime
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,10 +49,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
-import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
 import kotlinx.coroutines.Dispatchers
@@ -110,6 +114,9 @@ fun HomeScreen(
                 },
             )
         },
+        floatingActionButton = {
+            FloatingClockInOutButton(state, navController, context)
+        },
     ) {
         Box(
             modifier = modifier
@@ -130,8 +137,6 @@ fun HomeScreen(
                     DefaultProgressIndicator()
                 } else {
                     ClockSection()
-                    DefaultSpacer(size = 8)
-                    ClockInOutButton(state, navController)
                 }
             }
             PullRefreshIndicator(
@@ -160,13 +165,11 @@ private fun UserDisplayName(state: HomeState) {
     val text = if (state.isUserLoading) "Loading..."
     else user?.displayName
 
-    text?.let {
-        Text(
-            it,
-            overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
-        )
-    }
+    Text(
+        text ?: "",
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+    )
 }
 
 @Composable
@@ -193,7 +196,51 @@ private fun SignOutButton(
 
     LaunchedEffect(key1 = state.signOutSuccess) {
         if (state.signOutSuccess) {
-            navController?.navigate(Routes.SIGN_IN)
+            navController?.navigate(Routes.SIGN_IN) {
+                popUpTo(Routes.HOME) {
+                    inclusive = true
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FloatingClockInOutButton(
+    state: HomeState,
+    navController: NavController?,
+    context: Context,
+) {
+    val time = getCurrentTime() in "09:00:00".."21:00:00"
+    val status = state.userSuccess?.status ?: false
+
+    if (state.isUserLoading) return
+    FloatingActionButton(
+        onClick = {
+            if (time) {
+                val dateTime = System.currentTimeMillis()
+                navController?.navigate("location/$status/$dateTime")
+            } else {
+                defaultToast(context, "You can only clock in after 9:00 AM")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.primary,
+    ) {
+        if (status) {
+            PlainTooltipBox(tooltip = { Text("Clock Out") }) {
+                Icon(
+                    imageVector = Icons.Rounded.AccessTime,
+                    contentDescription = "Clock Out",
+                )
+            }
+        } else {
+            PlainTooltipBox(tooltip = { Text("Clock In") }) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreTime,
+                    contentDescription = "Clock In",
+                )
+            }
         }
     }
 }
@@ -214,28 +261,6 @@ private fun ClockSection() {
         fontSize = 48.sp,
         fontWeight = FontWeight.SemiBold,
     )
-}
-
-@Composable
-private fun ClockInOutButton(state: HomeState, navController: NavController?) {
-    val enabled = getCurrentTime() in "09:00:00".."21:00:00"
-
-    val user = state.userSuccess
-    val status = user?.status ?: false
-
-    DefaultButton(
-        onClick = {
-            if (enabled) {
-                val dateTime = System.currentTimeMillis()
-                navController?.navigate("location/$status/$dateTime")
-            }
-        },
-        enabled = enabled,
-    ) {
-        val buttonText = if (status) "Clock Out" else "Clock In"
-
-        Text(buttonText)
-    }
 }
 
 private fun getCurrentTime(): String {
