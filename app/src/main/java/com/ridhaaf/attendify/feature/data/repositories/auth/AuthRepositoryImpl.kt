@@ -117,14 +117,14 @@ class AuthRepositoryImpl @Inject constructor(
                     user.id = id
                     user.displayName = result.displayName ?: ""
                     user.email = result.email ?: ""
-                    user.photoUrl = result.photoUrl as String? ?: ""
+                    user.photoUrl = result.photoUrl.toString()
                     user.status = document["status"] as Boolean
                     user.createdAt = document["createdAt"] as Long
                 } else {
                     user.id = id
-                    user.displayName = document["displayName"] as String
-                    user.email = document["email"] as String
-                    user.photoUrl = document["photoUrl"] as String? ?: ""
+                    user.displayName = document["displayName"].toString()
+                    user.email = document["email"].toString()
+                    user.photoUrl = document["photoUrl"].toString()
                     user.status = document["status"] as Boolean
                     user.createdAt = document["createdAt"] as Long
                 }
