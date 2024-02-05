@@ -23,6 +23,7 @@ import com.ridhaaf.attendify.feature.presentation.auth.sign_in.SignInScreen
 import com.ridhaaf.attendify.feature.presentation.auth.sign_up.SignUpScreen
 import com.ridhaaf.attendify.feature.presentation.biometric.BiometricScreen
 import com.ridhaaf.attendify.feature.presentation.camera.CameraScreen
+import com.ridhaaf.attendify.feature.presentation.history.HistoryScreen
 import com.ridhaaf.attendify.feature.presentation.home.HomeScreen
 import com.ridhaaf.attendify.feature.presentation.location.LocationScreen
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
@@ -77,6 +78,11 @@ fun App() {
         }
         composable(Routes.HOME) {
             HomeScreen(
+                navController = navController,
+            )
+        }
+        composable(Routes.HISTORY) {
+            HistoryScreen(
                 navController = navController,
             )
         }
