@@ -73,14 +73,17 @@ class AuthRepositoryImpl @Inject constructor(
             emit(Resource.Loading())
 
             val result = auth.signInWithCredential(credential).await()
+            val isNewUser = result.additionalUserInfo?.isNewUser == true
 
             val user = result.user
-            insertUser(
-                user?.uid ?: "",
-                user?.displayName ?: "",
-                user?.email ?: "",
-                user?.photoUrl.toString(),
-            )
+            if (isNewUser) {
+                insertUser(
+                    user?.uid ?: "",
+                    user?.displayName ?: "",
+                    user?.email ?: "",
+                    user?.photoUrl.toString(),
+                )
+            }
 
             emit(Resource.Success(result))
         } catch (e: Exception) {

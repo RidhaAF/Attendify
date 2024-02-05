@@ -30,7 +30,7 @@ fun DefaultPhotoProfile(
         AsyncImage(
             model = user.photoUrl,
             contentDescription = user.displayName,
-            modifier = photoModifier,
+            modifier = photoModifier.size(iconSize),
             contentScale = ContentScale.Crop,
         )
     } else {

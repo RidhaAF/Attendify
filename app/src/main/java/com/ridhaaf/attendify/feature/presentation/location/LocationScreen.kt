@@ -139,6 +139,7 @@ private fun MapsContent() {
     val mapProperties by remember {
         mutableStateOf(
             MapProperties(
+                isMyLocationEnabled = true,
                 maxZoomPreference = 30f,
                 minZoomPreference = 5f,
             )
@@ -148,6 +149,7 @@ private fun MapsContent() {
         mutableStateOf(
             MapUiSettings(
                 mapToolbarEnabled = true,
+                myLocationButtonEnabled = true,
             )
         )
     }
