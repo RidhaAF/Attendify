@@ -110,6 +110,23 @@ class AttendanceRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getAttendancesByUserId(): Flow<Resource<List<Attendance>>> = flow {
+        emit(Resource.Loading())
+
+        try {
+            val userId = auth.currentUser?.uid ?: ""
+
+            val querySnapshot = attendancesCollection().whereEqualTo("userId", userId)
+                .orderBy("clockInDateTime", Query.Direction.DESCENDING).get().await()
+
+            val attendances = querySnapshot.toObjects(Attendance::class.java)
+
+            emit(Resource.Success(attendances))
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
+        }
+    }
+
     override fun getLatestAttendanceByUserId(): Flow<Resource<Attendance>> = flow {
         emit(Resource.Loading())
 

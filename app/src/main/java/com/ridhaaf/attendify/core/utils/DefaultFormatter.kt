@@ -11,3 +11,9 @@ fun timeFormatter(time: Long): String {
         dateFormat.format(time)
     }
 }
+
+fun dateFormatter(time: Long): String {
+    val format = "EE, d MMMM yyyy"
+    val dateFormat = SimpleDateFormat(format, Locale.getDefault())
+    return dateFormat.format(time)
+}

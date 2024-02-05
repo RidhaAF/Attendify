@@ -21,6 +21,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreTime
 import androidx.compose.material.icons.rounded.Timelapse
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -55,12 +56,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.ridhaaf.attendify.core.utils.getCurrentDate
 import com.ridhaaf.attendify.core.utils.getCurrentTime
+import com.ridhaaf.attendify.core.utils.getLocaleTime
 import com.ridhaaf.attendify.core.utils.timeFormatter
 import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
+import com.ridhaaf.attendify.ui.theme.DarkGreen
+import com.ridhaaf.attendify.ui.theme.DarkRed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -122,6 +126,7 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("Attendify") },
                 actions = {
+                    AttendanceHistoryButton(navController)
                     SignOutButton(viewModel, state, navController)
                 },
             )
@@ -153,6 +158,16 @@ fun HomeScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun AttendanceHistoryButton(navController: NavController?) {
+    IconButton(onClick = { navController?.navigate(Routes.HISTORY) }) {
+        Icon(
+            imageVector = Icons.Rounded.History,
+            contentDescription = "Attendance History",
+        )
     }
 }
 
@@ -246,9 +261,7 @@ private fun UserSection(state: HomeState) {
 private fun UserPhoto(state: HomeState) {
     val user = state.userSuccess
 
-    user?.let {
-        DefaultPhotoProfile(user = it, iconSize = 64.dp)
-    }
+    DefaultPhotoProfile(user = user, iconSize = 64.dp)
 }
 
 @Composable
@@ -323,9 +336,7 @@ private fun TimeSection() {
 
 @Composable
 private fun ClockInOutSection(state: HomeState) {
-    val currentTime = System.currentTimeMillis()
-    val gmt = 7 * 60 * 60 * 1000
-    val localeTime = currentTime - gmt
+    val localeTime = getLocaleTime()
     val time by remember { mutableLongStateOf(localeTime) }
 
     val user = state.userSuccess
@@ -368,6 +379,20 @@ private fun ClockInOutSection(state: HomeState) {
 
 @Composable
 private fun ClockNotesColumn(icon: ImageVector, time: String, title: String) {
+    val color = when (title) {
+        "Clock In" -> {
+            DarkGreen
+        }
+
+        "Clock Out" -> {
+            DarkRed
+        }
+
+        else -> {
+            MaterialTheme.colorScheme.secondary
+        }
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -375,12 +400,12 @@ private fun ClockNotesColumn(icon: ImageVector, time: String, title: String) {
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = color,
         )
         Text(time)
         Text(
             title,
-            color = MaterialTheme.colorScheme.secondary,
+            color = color,
         )
     }
 }
