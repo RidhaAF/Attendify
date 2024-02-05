@@ -39,7 +39,10 @@ fun GoogleButton(
                     horizontal = true,
                     size = 8,
                 )
-                Text(text)
+                Text(
+                    text,
+                    color = Color.Black,
+                )
             }
         },
     )

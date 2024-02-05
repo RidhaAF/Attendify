@@ -21,16 +21,18 @@ import com.ridhaaf.attendify.feature.data.models.auth.User
 @Composable
 fun DefaultPhotoProfile(
     modifier: Modifier = Modifier,
-    user: User,
+    user: User? = null,
     iconSize: Dp = 32.dp,
 ) {
     val photoModifier = modifier.clip(CircleShape)
+    val isPhotoUrlValid =
+        (user?.photoUrl != null) && (user.photoUrl?.isNotBlank() == true) && (user.photoUrl?.isNotEmpty() == true) && (user.photoUrl != "null") && (user.photoUrl != "NULL") && (user.photoUrl != "")
 
-    if (user.photoUrl != null) {
+    if (isPhotoUrlValid) {
         AsyncImage(
-            model = user.photoUrl,
-            contentDescription = user.displayName,
-            modifier = photoModifier,
+            model = user?.photoUrl,
+            contentDescription = user?.displayName,
+            modifier = photoModifier.size(iconSize),
             contentScale = ContentScale.Crop,
         )
     } else {
@@ -40,7 +42,7 @@ fun DefaultPhotoProfile(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Person,
-                contentDescription = user.displayName,
+                contentDescription = user?.displayName ?: "User photo profile",
                 modifier = Modifier.size(iconSize),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )

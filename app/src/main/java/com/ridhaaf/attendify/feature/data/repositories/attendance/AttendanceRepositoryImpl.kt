@@ -110,6 +110,44 @@ class AttendanceRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getAttendancesByUserId(): Flow<Resource<List<Attendance>>> = flow {
+        emit(Resource.Loading())
+
+        try {
+            val userId = auth.currentUser?.uid ?: ""
+
+            val querySnapshot = attendancesCollection().whereEqualTo("userId", userId)
+                .orderBy("clockInDateTime", Query.Direction.DESCENDING).get().await()
+
+            val attendances = querySnapshot.toObjects(Attendance::class.java)
+
+            emit(Resource.Success(attendances))
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
+        }
+    }
+
+    override fun getLatestAttendanceByUserId(): Flow<Resource<Attendance>> = flow {
+        emit(Resource.Loading())
+
+        try {
+            val userId = auth.currentUser?.uid ?: ""
+
+            val querySnapshot = getLatestClockInDocumentId(userId)?.let {
+                attendancesCollection().document(it).get().await()
+            }
+
+            if (querySnapshot != null) {
+                val attendance = querySnapshot.toObject(Attendance::class.java)
+                emit(Resource.Success(attendance!!))
+            } else {
+                emit(Resource.Error("You haven't clocked in yet!"))
+            }
+        } catch (e: Exception) {
+            emit(Resource.Error(e.localizedMessage ?: "Oops, something went wrong!"))
+        }
+    }
+
     override fun getEmployeeLocation(
         fusedLocationProviderClient: FusedLocationProviderClient,
     ): Flow<Resource<Location>> = flow {
@@ -138,7 +176,7 @@ class AttendanceRepositoryImpl @Inject constructor(
                 // Convert the Uri to a Bitmap
                 val photoBitmap =
                     BitmapFactory.decodeStream(context.contentResolver.openInputStream(photo))
-                        ?: throw NullPointerException("Failed to decode the photo")
+                        ?: throw NullPointerException("Failed to take photo, please try again")
 
                 // Convert the Bitmap to bytes
                 val baos = ByteArrayOutputStream()

@@ -17,3 +17,6 @@ val Green80 = Color(0xFFB8FFD0)
 val Blue40 = Color(0xFF5074A4)
 val BlueGrey40 = Color(0xFF5B6C71)
 val Green40 = Color(0xFF527D60)
+
+val DarkGreen = Color(0xFF008000)
+val DarkRed = Color(0xFFbf0000)

@@ -4,6 +4,7 @@ import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.data.models.auth.User
@@ -72,14 +73,17 @@ class AuthRepositoryImpl @Inject constructor(
             emit(Resource.Loading())
 
             val result = auth.signInWithCredential(credential).await()
+            val isNewUser = result.additionalUserInfo?.isNewUser == true
 
             val user = result.user
-            insertUser(
-                user?.uid ?: "",
-                user?.displayName ?: "",
-                user?.email ?: "",
-                user?.photoUrl.toString(),
-            )
+            if (isNewUser) {
+                insertUser(
+                    user?.uid ?: "",
+                    user?.displayName ?: "",
+                    user?.email ?: "",
+                    user?.photoUrl.toString(),
+                )
+            }
 
             emit(Resource.Success(result))
         } catch (e: Exception) {
@@ -109,7 +113,7 @@ class AuthRepositoryImpl @Inject constructor(
                     result.providerData.any { it.providerId == GoogleAuthProvider.PROVIDER_ID }
 
                 val id = result.uid
-                val document = firestore.collection("users").document(id).get().await()
+                val document = usersCollection().document(id).get().await()
 
                 val user = User()
                 if (isSignedInWithGoogle) {
@@ -151,6 +155,10 @@ class AuthRepositoryImpl @Inject constructor(
             "status" to status,
             "createdAt" to now,
         )
-        firestore.collection("users").document(id).set(user).await()
+        usersCollection().document(id).set(user).await()
+    }
+
+    private fun usersCollection(): CollectionReference {
+        return firestore.collection("users")
     }
 }

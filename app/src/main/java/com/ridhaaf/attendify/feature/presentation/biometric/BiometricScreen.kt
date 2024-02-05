@@ -1,6 +1,8 @@
 package com.ridhaaf.attendify.feature.presentation.biometric
 
+import android.content.Context
 import android.os.Build
+import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -16,7 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
+import com.ridhaaf.attendify.core.utils.navigateToAppSetting
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
 
@@ -38,48 +41,15 @@ fun BiometricScreen(
     val isBiometricAvailable = remember {
         biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
     }
-    when (isBiometricAvailable) {
-        BiometricManager.BIOMETRIC_SUCCESS -> {
-            // Biometric features are available
-        }
-
-        BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> {
-            // No biometric features available on this device
-            navigateToHome(navController)
-        }
-
-        BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> {
-            // Biometric features are currently unavailable.
-            navigateToHome(navController)
-        }
-
-        BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> {
-            // Biometric features available but a security vulnerability has been discovered
-        }
-
-        BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED -> {
-            // Biometric features are currently unavailable because the specified options are incompatible with the current Android version..
-        }
-
-        BiometricManager.BIOMETRIC_STATUS_UNKNOWN -> {
-            // Unable to determine whether the user can authenticate using biometrics
-        }
-
-        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-            // The user can't authenticate because no biometric or device credential is enrolled.
-            defaultToast(
-                context,
-                "No biometric or device credential is enrolled. Please add one in settings."
-            )
-        }
-    }
 
     val executor = remember { ContextCompat.getMainExecutor(context) }
-    val bioPrompt = BiometricPrompt(context as FragmentActivity,
+    val bioPrompt = BiometricPrompt(
+        context as FragmentActivity,
         executor,
         object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 super.onAuthenticationError(errorCode, errString)
+                checkBiometric(context)
                 println("Biometric authentication error: $errString")
             }
 
@@ -94,19 +64,36 @@ fun BiometricScreen(
                 super.onAuthenticationFailed()
                 println("Biometric authentication failed")
             }
-        })
+        },
+    )
 
-    val promptInfo = BiometricPrompt.PromptInfo.Builder().setAllowedAuthenticators(BIOMETRIC_STRONG)
+    val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         .setTitle("Biometric Authentication")
-        .setSubtitle("Authenticate using your fingerprint or face recognition")
-        .setDescription("Please authenticate to proceed").setNegativeButtonText("Cancel")
+        .setSubtitle("Authenticate using your fingerprint, face recognition or device credential")
+        .setDescription("Please authenticate to proceed")
         .setConfirmationRequired(true).build()
 
-    DisposableEffect(context) {
-        bioPrompt.authenticate(promptInfo)
+    LaunchedEffect(isBiometricAvailable) {
+        when (isBiometricAvailable) {
+            BiometricManager.BIOMETRIC_SUCCESS -> {
+                // Biometric features are available
+                bioPrompt.authenticate(promptInfo)
+            }
 
-        onDispose {
-            bioPrompt.cancelAuthentication()
+            BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                // The user can't authenticate because no biometric or device credential is enrolled.
+                defaultToast(
+                    context,
+                    "No biometric or device credential is enrolled. Please add one in Settings"
+                )
+                checkBiometric(context)
+            }
+
+            else -> {
+                navigateToHome(navController)
+                println("Biometric authentication failed. Please try again later.")
+            }
         }
     }
 
@@ -124,6 +111,14 @@ fun BiometricScreen(
                 tint = MaterialTheme.colorScheme.primary,
             )
         }
+    }
+}
+
+private fun checkBiometric(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        context.navigateToAppSetting(Settings.ACTION_BIOMETRIC_ENROLL)
+    } else {
+        context.navigateToAppSetting(Settings.ACTION_SECURITY_SETTINGS)
     }
 }
 
