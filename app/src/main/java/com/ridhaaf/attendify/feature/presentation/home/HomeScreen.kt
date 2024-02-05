@@ -57,6 +57,7 @@ import androidx.navigation.NavController
 import com.ridhaaf.attendify.core.utils.getCurrentDate
 import com.ridhaaf.attendify.core.utils.getCurrentTime
 import com.ridhaaf.attendify.core.utils.getLocaleTime
+import com.ridhaaf.attendify.core.utils.navigateToAppSetting
 import com.ridhaaf.attendify.core.utils.timeFormatter
 import com.ridhaaf.attendify.feature.presentation.components.DefaultPhotoProfile
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
@@ -92,8 +93,9 @@ fun HomeScreen(
             if (!isGranted) {
                 defaultToast(
                     context,
-                    "Permission denied, please allow the permission from Settings",
+                    "Permission denied, please allow the notifications permission from Settings",
                 )
+                context.navigateToAppSetting()
             }
         }
 

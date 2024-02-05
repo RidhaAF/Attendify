@@ -5,13 +5,18 @@ import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -42,11 +48,13 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.ridhaaf.attendify.core.utils.OfficeLocation
 import com.ridhaaf.attendify.core.utils.isInRadius
+import com.ridhaaf.attendify.core.utils.navigateToAppSetting
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
+import com.ridhaaf.attendify.feature.presentation.routes.Routes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -71,30 +79,28 @@ fun LocationScreen(
                     viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
                 } else {
                     defaultToast(
-                        context, "Permission denied, please allow the permission from Settings"
+                        context,
+                        "Permission denied, please allow the location permission from Settings"
                     )
+                    context.navigateToAppSetting()
                 }
             }
         }
 
+    val isPermissionGranted = ContextCompat.checkSelfPermission(
+        context, ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+        context, ACCESS_COARSE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
-            val isPermissionGranted = ContextCompat.checkSelfPermission(
-                context, ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-                context, ACCESS_COARSE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-
-            if (isPermissionGranted) {
-                viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
-            } else {
-                requestPermissionLauncher.launch(
-                    arrayOf(
-                        ACCESS_FINE_LOCATION,
-                        ACCESS_COARSE_LOCATION,
-                    )
-                )
-            }
+            getMyLocation(
+                isPermissionGranted,
+                viewModel,
+                fusedLocationProviderClient,
+                requestPermissionLauncher,
+            )
         }
     }
 
@@ -104,6 +110,14 @@ fun LocationScreen(
                 title = { Text("Location") },
                 navigationIcon = {
                     DefaultBackButton(navController)
+                },
+                actions = {
+                    MyLocationButton(
+                        isPermissionGranted,
+                        viewModel,
+                        fusedLocationProviderClient,
+                        requestPermissionLauncher,
+                    )
                 },
             )
         },
@@ -121,7 +135,7 @@ fun LocationScreen(
                     if (state.isLoading) {
                         DefaultProgressIndicator()
                     } else {
-                        MapsContent()
+                        MapsContent(isPermissionGranted)
                     }
                 }
                 LocationContent(status, dateTime, location, navController)
@@ -131,7 +145,28 @@ fun LocationScreen(
 }
 
 @Composable
-private fun MapsContent() {
+private fun MyLocationButton(
+    isPermissionGranted: Boolean,
+    viewModel: LocationViewModel,
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    requestPermissionLauncher: ActivityResultLauncher<Array<String>>,
+) {
+    IconButton(
+        onClick = {
+            getMyLocation(
+                isPermissionGranted,
+                viewModel,
+                fusedLocationProviderClient,
+                requestPermissionLauncher,
+            )
+        },
+    ) {
+        Icon(imageVector = Icons.Rounded.MyLocation, contentDescription = "My Location")
+    }
+}
+
+@Composable
+private fun MapsContent(isPermissionGranted: Boolean) {
     val officeLocation = LatLng(OfficeLocation.LATITUDE, OfficeLocation.LONGITUDE)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(officeLocation, 18f)
@@ -139,7 +174,7 @@ private fun MapsContent() {
     val mapProperties by remember {
         mutableStateOf(
             MapProperties(
-                isMyLocationEnabled = true,
+                isMyLocationEnabled = isPermissionGranted,
                 maxZoomPreference = 30f,
                 minZoomPreference = 5f,
             )
@@ -198,11 +233,33 @@ private fun LocationContent(
             onClick = {
                 val latitude = location?.latitude ?: 0.0
                 val longitude = location?.longitude ?: 0.0
-                navController?.navigate("camera/$status/$dateTime/$latitude/$longitude")
+                navController?.navigate("camera/$status/$dateTime/$latitude/$longitude") {
+                    popUpTo(Routes.LOCATION) {
+                        inclusive = true
+                    }
+                }
             },
             enabled = isInsideRadius,
         ) {
             Text("Next")
         }
+    }
+}
+
+private fun getMyLocation(
+    isPermissionGranted: Boolean,
+    viewModel: LocationViewModel,
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    requestPermissionLauncher: ActivityResultLauncher<Array<String>>,
+) {
+    if (isPermissionGranted) {
+        viewModel.onEvent(LocationEvent.GetEmployeeLocation(fusedLocationProviderClient))
+    } else {
+        requestPermissionLauncher.launch(
+            arrayOf(
+                ACCESS_FINE_LOCATION,
+                ACCESS_COARSE_LOCATION,
+            )
+        )
     }
 }

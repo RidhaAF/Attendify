@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.ridhaaf.attendify.BuildConfig
 import com.ridhaaf.attendify.core.utils.NotificationService
+import com.ridhaaf.attendify.core.utils.navigateToAppSetting
 import com.ridhaaf.attendify.feature.presentation.components.DefaultBackButton
 import com.ridhaaf.attendify.feature.presentation.components.DefaultProgressIndicator
 import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
@@ -104,21 +106,26 @@ fun CameraScreen(
             if (isGranted) {
                 cameraLauncher.launch(uri)
             } else {
-                defaultToast(context, "Camera permission is required to use camera ")
+                defaultToast(
+                    context,
+                    "Permission denied, please allow the camera permission from Settings"
+                )
+                context.navigateToAppSetting()
             }
         }
 
+    val isPermissionGranted = ContextCompat.checkSelfPermission(
+        context, CAMERA
+    ) == PackageManager.PERMISSION_GRANTED
+
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
-            val isPermissionGranted = ContextCompat.checkSelfPermission(
-                context, CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-
-            if (isPermissionGranted) {
-                cameraLauncher.launch(uri)
-            } else {
-                requestCameraPermissionLauncher.launch(CAMERA)
-            }
+            launchCamera(
+                isPermissionGranted,
+                cameraLauncher,
+                uri,
+                requestCameraPermissionLauncher,
+            )
         }
     }
 
@@ -134,6 +141,14 @@ fun CameraScreen(
 
         if (clockInError.isNotBlank()) {
             defaultToast(context, clockInError)
+            if (clockInError == "Failed to take photo, please try again") {
+                launchCamera(
+                    isPermissionGranted,
+                    cameraLauncher,
+                    uri,
+                    requestCameraPermissionLauncher,
+                )
+            }
         }
     }
 
@@ -149,6 +164,14 @@ fun CameraScreen(
 
         if (clockOutError.isNotBlank()) {
             defaultToast(context, clockOutError)
+            if (clockOutError == "Failed to take photo, please try again") {
+                launchCamera(
+                    isPermissionGranted,
+                    cameraLauncher,
+                    uri,
+                    requestCameraPermissionLauncher,
+                )
+            }
         }
     }
 
@@ -164,7 +187,14 @@ fun CameraScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { cameraLauncher.launch(uri) },
+                onClick = {
+                    launchCamera(
+                        isPermissionGranted,
+                        cameraLauncher,
+                        uri,
+                        requestCameraPermissionLauncher,
+                    )
+                },
                 containerColor = MaterialTheme.colorScheme.primary,
             ) {
                 Icon(
@@ -212,6 +242,19 @@ private fun Context.createImageFile(): File {
         ".jpg", /* suffix */
         externalCacheDir /* directory */
     )
+}
+
+private fun launchCamera(
+    isPermissionGranted: Boolean,
+    cameraLauncher: ActivityResultLauncher<Uri>,
+    uri: Uri,
+    requestCameraPermissionLauncher: ActivityResultLauncher<String>,
+) {
+    if (isPermissionGranted) {
+        cameraLauncher.launch(uri)
+    } else {
+        requestCameraPermissionLauncher.launch(CAMERA)
+    }
 }
 
 private fun navigateToHome(navController: NavController?) {
