@@ -1,6 +1,6 @@
 package com.ridhaaf.attendify.core.utils
 
-import android.icu.text.SimpleDateFormat
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 fun timeFormatter(time: Long): String {
