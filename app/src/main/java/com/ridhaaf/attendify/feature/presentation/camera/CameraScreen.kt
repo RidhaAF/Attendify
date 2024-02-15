@@ -7,7 +7,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +36,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
 import com.ridhaaf.attendify.BuildConfig
 import com.ridhaaf.attendify.core.utils.NotificationService
 import com.ridhaaf.attendify.core.utils.navigateToAppSetting
@@ -79,27 +77,22 @@ fun CameraScreen(
         mutableStateOf<Uri>(Uri.EMPTY)
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-        if (it) {
-            val data = mutableMapOf(
-                "status" to status as Any,
-                "dateTime" to dateTime as Any,
-                "latitude" to latitude as Any,
-                "longitude" to longitude as Any,
-            ).toMap()
-            capturedImageUri = uri
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { isSuccessful ->
+            if (isSuccessful) {
+                val data = mutableMapOf(
+                    "status" to status as Any,
+                    "dateTime" to dateTime as Any,
+                    "latitude" to latitude as Any,
+                    "longitude" to longitude as Any,
+                ).toMap()
+                capturedImageUri = uri
 
-            if (status) {
-                viewModel.onEvent(
-                    CameraEvent.ClockOut(context, data, capturedImageUri)
-                )
+                handleImageCapture(context, viewModel, status, data, capturedImageUri)
             } else {
-                viewModel.onEvent(
-                    CameraEvent.ClockIn(context, data, capturedImageUri)
-                )
+                defaultToast(context, "Failed to take photo, please try again")
             }
         }
-    }
 
     val requestCameraPermissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -108,17 +101,19 @@ fun CameraScreen(
             } else {
                 defaultToast(
                     context,
-                    "Permission denied, please allow the camera permission from Settings"
+                    "Permission denied, please allow the camera permission from Settings",
                 )
                 context.navigateToAppSetting()
             }
         }
 
-    val isPermissionGranted = ContextCompat.checkSelfPermission(
-        context, CAMERA
-    ) == PackageManager.PERMISSION_GRANTED
+    val isPermissionGranted = remember {
+        ContextCompat.checkSelfPermission(
+            context, CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(key1 = isPermissionGranted) {
         withContext(Dispatchers.IO) {
             launchCamera(
                 isPermissionGranted,
@@ -220,14 +215,6 @@ fun CameraScreen(
                     val text = if (status) "Clocking Out..." else "Clocking In..."
                     Text(text)
                 }
-            } else {
-                if (capturedImageUri.path?.isNotEmpty() == true) {
-                    Image(
-                        modifier = Modifier.fillMaxSize(),
-                        painter = rememberAsyncImagePainter(capturedImageUri),
-                        contentDescription = "Captured Image",
-                    )
-                }
             }
         }
     }
@@ -242,6 +229,24 @@ private fun Context.createImageFile(): File {
         ".jpg", /* suffix */
         externalCacheDir /* directory */
     )
+}
+
+private fun handleImageCapture(
+    context: Context,
+    viewModel: CameraViewModel,
+    status: Boolean,
+    data: Map<String, Any>,
+    capturedImageUri: Uri,
+) {
+    if (status) {
+        viewModel.onEvent(
+            CameraEvent.ClockOut(context, data, capturedImageUri)
+        )
+    } else {
+        viewModel.onEvent(
+            CameraEvent.ClockIn(context, data, capturedImageUri)
+        )
+    }
 }
 
 private fun launchCamera(
