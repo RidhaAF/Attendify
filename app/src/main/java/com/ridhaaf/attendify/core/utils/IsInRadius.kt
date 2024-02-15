@@ -1,21 +1,28 @@
 package com.ridhaaf.attendify.core.utils
 
 import android.location.Location
-import com.google.android.gms.maps.model.LatLng
 
-fun isInRadius(employeeLocation: Location): Boolean {
-    val officeLoc = LatLng(OfficeLocation.LATITUDE, OfficeLocation.LONGITUDE)
-    val employeeLoc = LatLng(employeeLocation.latitude, employeeLocation.longitude)
+fun isInRadius(
+    employeeLocation: Location,
+    officeLocation: Location = Location("Office").apply {
+        latitude = OfficeLocation.LATITUDE
+        longitude = OfficeLocation.LONGITUDE
+    },
+): Boolean {
+    if (employeeLocation.latitude == 0.0 && employeeLocation.longitude == 0.0) {
+        return false
+    }
 
-    val locationA = Location("Office")
-    locationA.latitude = officeLoc.latitude
-    locationA.longitude = officeLoc.longitude
-    val locationB = Location("Employee")
-    locationB.latitude = employeeLoc.latitude
-    locationB.longitude = employeeLoc.longitude
+    val distance: Float = employeeLocation.distanceTo(officeLocation)
+    val distanceInKm = distance / 1000
 
-    var distance: Float = locationA.distanceTo(locationB)
-    distance /= 1000
+    val result = distanceInKm <= 0.1 // 100 m
 
-    return distance <= 0.1
+    println("employeeLocation: ${employeeLocation.latitude}, ${employeeLocation.longitude}")
+    println("officeLocation: ${officeLocation.latitude}, ${officeLocation.longitude}")
+    println("distance: $distance m")
+    println("distanceInKm: $distanceInKm km")
+    println("isInRadius: $result\n")
+
+    return result
 }
