@@ -87,11 +87,13 @@ fun LocationScreen(
             }
         }
 
-    val isPermissionGranted = ContextCompat.checkSelfPermission(
-        context, ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
-        context, ACCESS_COARSE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
+    val isPermissionGranted = remember {
+        ContextCompat.checkSelfPermission(
+            context, ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+            context, ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
