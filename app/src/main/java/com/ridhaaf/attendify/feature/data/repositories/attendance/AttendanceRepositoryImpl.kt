@@ -169,24 +169,26 @@ class AttendanceRepositoryImpl @Inject constructor(
     private suspend fun uploadAttendancePhoto(context: Context, photo: Uri): String {
         return withContext(Dispatchers.IO) {
             try {
-                val storagePath = "attendance"
-
-                val filename = "${UUID.randomUUID()}.jpg"
-
                 // Convert the Uri to a Bitmap
                 val photoBitmap =
                     BitmapFactory.decodeStream(context.contentResolver.openInputStream(photo))
                         ?: throw NullPointerException("Failed to take photo, please try again")
 
+                // Compress the Bitmap
+                val compressedPhotoBitmap =
+                    Bitmap.createScaledBitmap(photoBitmap, 405, 540, true)
+
                 // Convert the Bitmap to bytes
                 val baos = ByteArrayOutputStream()
-                photoBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
+                compressedPhotoBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos)
                 val data = baos.toByteArray()
 
                 // Close the ByteArrayOutputStream
                 baos.close()
 
+                val storagePath = "attendance"
                 val userId = auth.currentUser?.uid
+                val filename = "${UUID.randomUUID()}.jpg"
 
                 // Upload the photo to Firebase Storage
                 val storageRef = storage.reference.child("$storagePath/$userId/$filename")
