@@ -9,11 +9,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,7 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,6 +50,7 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.ui.theme.DarkGreen
 import com.ridhaaf.attendify.ui.theme.DarkRed
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -55,7 +65,7 @@ fun HistoryScreen(
     val refreshing = viewModel.isRefreshing.value
     val pullRefreshState = rememberPullRefreshState(
         refreshing = refreshing,
-        onRefresh = { viewModel.onEvent(HistoryEvent.Refresh) },
+        onRefresh = { viewModel.onEvent(HistoryEvent.Refresh()) },
     )
 
     LaunchedEffect(key1 = error) {
@@ -70,7 +80,20 @@ fun HistoryScreen(
                 title = { Text("History") },
                 navigationIcon = {
                     BackButton(navController)
-                }
+                },
+                actions = {
+                    var selectedSortHistoryItem by remember { mutableStateOf("latest") }
+                    val sortHistoryItems = listOf("Latest", "Oldest")
+
+                    SortHistoryButton(
+                        sortHistoryItems,
+                        selectedSortHistoryItem,
+                        onSortHistoryItemSelected = { item ->
+                            selectedSortHistoryItem = item.lowercase(Locale.getDefault())
+                            viewModel.onEvent(HistoryEvent.Refresh(selectedSortHistoryItem))
+                        },
+                    )
+                },
             )
         },
     ) {
@@ -105,6 +128,44 @@ private fun BackButton(navController: NavController?) {
 }
 
 @Composable
+private fun SortHistoryButton(
+    sortHistoryItems: List<String>,
+    selectedSortHistoryItem: String,
+    onSortHistoryItemSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    IconButton(onClick = { expanded = true }) {
+        Icon(
+            Icons.AutoMirrored.Rounded.Sort,
+            contentDescription = "Sort History",
+        )
+    }
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false },
+    ) {
+        sortHistoryItems.forEach { item ->
+            DropdownMenuItem(
+                { Text(text = item) },
+                onClick = {
+                    onSortHistoryItemSelected(item)
+                    expanded = false
+                },
+                trailingIcon = {
+                    if (item.lowercase(Locale.getDefault()) == selectedSortHistoryItem) {
+                        Icon(
+                            Icons.Rounded.CheckCircle,
+                            contentDescription = item,
+                        )
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
 private fun HistoryContent(state: HistoryState) {
     val attendances = state.history.orEmpty()
 
@@ -133,7 +194,7 @@ private fun HistoryCard(attendance: Attendance) {
 
     val clockInTime = attendance.clockInDateTime
     val clockOutTime = attendance.clockOutDateTime
-    
+
     val gmt7Time = clockOutTime - 7 * 60 * 60 * 1000
     val workingHours = if (clockOutTime == 0L) {
         time.minus(clockInTime)

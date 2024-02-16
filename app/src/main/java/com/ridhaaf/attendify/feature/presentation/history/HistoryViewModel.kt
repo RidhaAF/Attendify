@@ -25,13 +25,13 @@ class HistoryViewModel @Inject constructor(
         refresh()
     }
 
-    private fun refresh() {
-        getAttendancesByUserId()
+    private fun refresh(sort: String = "latest") {
+        getAttendancesByUserId(sort)
     }
 
-    private fun getAttendancesByUserId() {
+    private fun getAttendancesByUserId(sort: String) {
         viewModelScope.launch {
-            useCase.getAttendancesByUserId().collectLatest { result ->
+            useCase.getAttendancesByUserId(sort).collectLatest { result ->
                 when (result) {
                     is Resource.Loading -> {
                         _state.value = _state.value.copy(
@@ -60,8 +60,8 @@ class HistoryViewModel @Inject constructor(
 
     fun onEvent(event: HistoryEvent) {
         when (event) {
-            HistoryEvent.Refresh -> {
-                refresh()
+            is HistoryEvent.Refresh -> {
+                refresh(event.sort)
             }
         }
     }

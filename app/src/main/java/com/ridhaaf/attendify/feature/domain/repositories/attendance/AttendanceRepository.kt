@@ -21,7 +21,7 @@ interface AttendanceRepository {
         photo: Uri,
     ): Flow<Resource<Boolean>>
 
-    fun getAttendancesByUserId(): Flow<Resource<List<Attendance>>>
+    fun getAttendancesByUserId(sort: String): Flow<Resource<List<Attendance>>>
 
     fun getLatestAttendanceByUserId(): Flow<Resource<Attendance>>
 

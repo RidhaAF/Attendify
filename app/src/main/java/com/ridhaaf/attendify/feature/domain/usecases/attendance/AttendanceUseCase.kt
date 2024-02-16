@@ -20,8 +20,8 @@ class AttendanceUseCase(
         return repository.clockOut(context, data, photo)
     }
 
-    fun getAttendancesByUserId(): Flow<Resource<List<Attendance>>> {
-        return repository.getAttendancesByUserId()
+    fun getAttendancesByUserId(sort: String): Flow<Resource<List<Attendance>>> {
+        return repository.getAttendancesByUserId(sort)
     }
 
     fun getLatestAttendanceByUserId(): Flow<Resource<Attendance>> {
