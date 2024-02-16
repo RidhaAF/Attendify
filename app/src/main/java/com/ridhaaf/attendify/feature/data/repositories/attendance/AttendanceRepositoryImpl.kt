@@ -13,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import com.ridhaaf.attendify.core.utils.Resource
+import com.ridhaaf.attendify.core.utils.SortOption
 import com.ridhaaf.attendify.feature.data.models.attendance.Attendance
 import com.ridhaaf.attendify.feature.domain.repositories.attendance.AttendanceRepository
 import kotlinx.coroutines.Dispatchers
@@ -110,14 +111,16 @@ class AttendanceRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getAttendancesByUserId(): Flow<Resource<List<Attendance>>> = flow {
+    override fun getAttendancesByUserId(sort: SortOption): Flow<Resource<List<Attendance>>> = flow {
         emit(Resource.Loading())
 
         try {
             val userId = auth.currentUser?.uid ?: ""
+            val sortedBy =
+                if (sort == SortOption.LATEST) Query.Direction.DESCENDING else Query.Direction.ASCENDING
 
             val querySnapshot = attendancesCollection().whereEqualTo("userId", userId)
-                .orderBy("clockInDateTime", Query.Direction.DESCENDING).get().await()
+                .orderBy("clockInDateTime", sortedBy).get().await()
 
             val attendances = querySnapshot.toObjects(Attendance::class.java)
 
@@ -175,8 +178,7 @@ class AttendanceRepositoryImpl @Inject constructor(
                         ?: throw NullPointerException("Failed to take photo, please try again")
 
                 // Compress the Bitmap
-                val compressedPhotoBitmap =
-                    Bitmap.createScaledBitmap(photoBitmap, 405, 540, true)
+                val compressedPhotoBitmap = Bitmap.createScaledBitmap(photoBitmap, 405, 540, true)
 
                 // Convert the Bitmap to bytes
                 val baos = ByteArrayOutputStream()
