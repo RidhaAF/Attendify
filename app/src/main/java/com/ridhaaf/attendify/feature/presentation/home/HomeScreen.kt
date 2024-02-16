@@ -339,13 +339,20 @@ private fun TimeSection() {
 @Composable
 private fun ClockInOutSection(state: HomeState) {
     val localeTime = getLocaleTime()
-    val time by remember { mutableLongStateOf(localeTime) }
+    var time by remember { mutableLongStateOf(localeTime) }
 
     val user = state.userSuccess
     val attendance = state.attendanceSuccess
 
     val clockInTime = if (user?.status == true) attendance?.clockInDateTime ?: 0L else 0L
     val clockOutTime = if (user?.status == true) attendance?.clockOutDateTime ?: 0L else 0L
+
+    LaunchedEffect(key1 = user?.status == true) {
+        while (true) {
+            time = getLocaleTime()
+            delay(1000)
+        }
+    }
 
     val workingHours = if (user?.status == true) {
         if (clockOutTime == 0L) {
