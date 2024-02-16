@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ridhaaf.attendify.core.utils.Resource
+import com.ridhaaf.attendify.core.utils.SortOption
 import com.ridhaaf.attendify.feature.domain.usecases.attendance.AttendanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -25,11 +26,11 @@ class HistoryViewModel @Inject constructor(
         refresh()
     }
 
-    private fun refresh(sort: String = "latest") {
+    private fun refresh(sort: SortOption = SortOption.LATEST) {
         getAttendancesByUserId(sort)
     }
 
-    private fun getAttendancesByUserId(sort: String) {
+    private fun getAttendancesByUserId(sort: SortOption) {
         viewModelScope.launch {
             useCase.getAttendancesByUserId(sort).collectLatest { result ->
                 when (result) {
