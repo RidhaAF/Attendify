@@ -53,6 +53,7 @@ import com.ridhaaf.attendify.feature.presentation.components.DefaultSpacer
 import com.ridhaaf.attendify.feature.presentation.components.defaultToast
 import com.ridhaaf.attendify.ui.theme.DarkGreen
 import com.ridhaaf.attendify.ui.theme.DarkRed
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -200,10 +201,17 @@ private fun HistoryContent(state: HistoryState) {
 @Composable
 private fun HistoryCard(attendance: Attendance) {
     val localeTime = getLocaleTime()
-    val time by remember { mutableLongStateOf(localeTime) }
+    var time by remember { mutableLongStateOf(localeTime) }
 
     val clockInTime = attendance.clockInDateTime
     val clockOutTime = attendance.clockOutDateTime
+
+    LaunchedEffect(key1 = clockOutTime != 0L) {
+        while (true) {
+            time = getLocaleTime()
+            delay(1000)
+        }
+    }
 
     val gmt7Time = clockOutTime - 7 * 60 * 60 * 1000
     val workingHours = if (clockOutTime == 0L) {
