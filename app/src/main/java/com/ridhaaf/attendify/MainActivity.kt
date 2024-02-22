@@ -26,6 +26,7 @@ import com.ridhaaf.attendify.feature.presentation.camera.CameraScreen
 import com.ridhaaf.attendify.feature.presentation.history.HistoryScreen
 import com.ridhaaf.attendify.feature.presentation.home.HomeScreen
 import com.ridhaaf.attendify.feature.presentation.location.LocationScreen
+import com.ridhaaf.attendify.feature.presentation.profile.ProfileScreen
 import com.ridhaaf.attendify.feature.presentation.routes.Routes
 import com.ridhaaf.attendify.ui.theme.AttendifyTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -78,6 +79,11 @@ fun App() {
         }
         composable(Routes.HOME) {
             HomeScreen(
+                navController = navController,
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
                 navController = navController,
             )
         }

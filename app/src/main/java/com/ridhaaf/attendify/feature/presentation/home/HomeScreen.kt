@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -152,7 +153,7 @@ fun HomeScreen(
                     .verticalScroll(verticalScrollState)
                     .padding(it),
             ) {
-                HomeContent(state)
+                HomeContent(state, navController)
                 PullRefreshIndicator(
                     refreshing = refreshing,
                     state = pullRefreshState,
@@ -235,22 +236,24 @@ private fun FloatingClockInOutButton(
 }
 
 @Composable
-private fun HomeContent(state: HomeState) {
+private fun HomeContent(state: HomeState, navController: NavController?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
     ) {
-        UserSection(state)
+        UserSection(state, navController)
         DefaultSpacer(size = 32)
         AttendanceSection(state)
     }
 }
 
 @Composable
-private fun UserSection(state: HomeState) {
+private fun UserSection(state: HomeState, navController: NavController?) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { navController?.navigate(Routes.PROFILE) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         UserPhoto(state)
