@@ -75,6 +75,7 @@ class ProfileViewModel @Inject constructor(
                             isUploadPhotoLoading = false,
                             uploadPhotoSuccess = true,
                         )
+                        refresh()
                     }
 
                     is Resource.Error -> {
@@ -104,6 +105,7 @@ class ProfileViewModel @Inject constructor(
                             isDeletePhotoLoading = false,
                             deletePhotoSuccess = true,
                         )
+                        refresh()
                     }
 
                     is Resource.Error -> {

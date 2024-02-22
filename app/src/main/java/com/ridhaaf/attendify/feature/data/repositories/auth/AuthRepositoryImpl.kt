@@ -202,17 +202,19 @@ class AuthRepositoryImpl @Inject constructor(
             emit(Resource.Loading())
 
             val userId = auth.currentUser?.uid ?: throw NullPointerException("User ID is null")
+            val userDocRef = usersCollection().document(userId)
 
-            // Get the current user's profile photo URL
-            val photoUrl = auth.currentUser?.photoUrl
+            // Retrieve the user document and the photo URL
+            val userSnapshot = userDocRef.get().await()
+            val photoUrl = userSnapshot.getString("photoUrl")
 
-            if (photoUrl == null) {
+            if (photoUrl.isNullOrBlank()) {
                 emit(Resource.Error("No photo to delete"))
                 return@flow
             }
 
             // Delete the photo from Firebase Storage
-            val storageRef = storage.getReferenceFromUrl(photoUrl.toString())
+            val storageRef = storage.getReferenceFromUrl(photoUrl)
             storageRef.delete().await()
 
             // Update the user profile to remove the photo URL
@@ -220,7 +222,11 @@ class AuthRepositoryImpl @Inject constructor(
 
             emit(Resource.Success(true))
         } catch (e: Exception) {
-            emit(Resource.Error("Failed to delete photo: ${e.localizedMessage ?: "Unknown error"}"))
+            emit(
+                Resource.Error(
+                    e.localizedMessage ?: "Delete photo failed, please try again later"
+                )
+            )
         }
     }.flowOn(Dispatchers.IO)
 
@@ -246,9 +252,9 @@ class AuthRepositoryImpl @Inject constructor(
         id: String,
         photoUrl: String? = null,
     ) {
-        val user = mutableMapOf<String, Any>()
+        val user = mutableMapOf<String, Any?>()
 
-        user["photoUrl"] = photoUrl ?: ""
+        user["photoUrl"] = photoUrl as Any?
         usersCollection().document(id).update(user).await()
     }
 

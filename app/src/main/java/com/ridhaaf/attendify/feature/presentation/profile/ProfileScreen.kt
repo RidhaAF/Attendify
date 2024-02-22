@@ -141,7 +141,13 @@ fun ProfileScreen(
                     .verticalScroll(verticalScrollState)
                     .padding(it),
             ) {
-                ProfileContent(state, modalBottomSheetState, getContent, selectedImageUri)
+                ProfileContent(
+                    state,
+                    modalBottomSheetState,
+                    viewModel,
+                    getContent,
+                    selectedImageUri,
+                )
                 PullRefreshIndicator(
                     refreshing = refreshing,
                     state = pullRefreshState,
@@ -179,10 +185,17 @@ private fun SaveButton(
 private fun ProfileContent(
     state: ProfileState,
     modalBottomSheetState: SheetState,
+    viewModel: ProfileViewModel,
     imagePicker: ManagedActivityResultLauncher<String, Uri?>,
     selectedImageUri: Uri?,
 ) {
-    UserSection(state, modalBottomSheetState, imagePicker, selectedImageUri)
+    UserSection(
+        state,
+        modalBottomSheetState,
+        viewModel,
+        imagePicker,
+        selectedImageUri,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,6 +203,7 @@ private fun ProfileContent(
 private fun UserSection(
     state: ProfileState,
     modalBottomSheetState: SheetState,
+    viewModel: ProfileViewModel,
     imagePicker: ManagedActivityResultLauncher<String, Uri?>,
     selectedImageUri: Uri?,
 ) {
@@ -200,7 +214,13 @@ private fun UserSection(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        UserPhoto(state, modalBottomSheetState, imagePicker, selectedImageUri)
+        UserPhoto(
+            state,
+            modalBottomSheetState,
+            viewModel,
+            imagePicker,
+            selectedImageUri,
+        )
         DefaultSpacer()
         UserDisplayName(state)
         UserEmail(state)
@@ -212,6 +232,7 @@ private fun UserSection(
 private fun UserPhoto(
     state: ProfileState,
     modalBottomSheetState: SheetState,
+    viewModel: ProfileViewModel,
     imagePicker: ManagedActivityResultLauncher<String, Uri?>,
     selectedImageUri: Uri?,
 ) {
@@ -240,18 +261,27 @@ private fun UserPhoto(
             )
         }
     }
+
+    LaunchedEffect(key1 = selectedImageUri) {
+        if (selectedImageUri != null) {
+            isBottomSheetOpen = false
+        }
+    }
+    
     UserPhotoBottomSheetSection(
         isBottomSheetOpen,
         modalBottomSheetState,
         onDismiss = {
             isBottomSheetOpen = false
         },
+        viewModel,
         imagePicker,
     )
 }
 
 @Composable
 private fun UserPhotoBottomSheetContent(
+    viewModel: ProfileViewModel,
     imagePicker: ManagedActivityResultLauncher<String, Uri?>,
 ) {
     val itemList = listOf(
@@ -263,7 +293,7 @@ private fun UserPhotoBottomSheetContent(
         PhotoAction(
             icon = Icons.Rounded.Delete,
             title = "Delete photo",
-            onClick = { ProfileEvent.DeletePhoto },
+            onClick = { viewModel.onEvent(ProfileEvent.DeletePhoto) },
         ),
     )
 
@@ -310,6 +340,7 @@ private fun UserPhotoBottomSheetSection(
     isBottomSheetOpen: Boolean,
     modalBottomSheetState: SheetState,
     onDismiss: () -> Unit,
+    viewModel: ProfileViewModel,
     imagePicker: ManagedActivityResultLauncher<String, Uri?>,
 ) {
     if (isBottomSheetOpen) {
@@ -317,7 +348,7 @@ private fun UserPhotoBottomSheetSection(
             onDismissRequest = { onDismiss() },
             sheetState = modalBottomSheetState,
         ) {
-            UserPhotoBottomSheetContent(imagePicker)
+            UserPhotoBottomSheetContent(viewModel, imagePicker)
         }
     }
 }
