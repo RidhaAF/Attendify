@@ -56,8 +56,9 @@ object AttendifyModule {
     fun provideAuthRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore,
+        storage: FirebaseStorage,
     ): AuthRepository {
-        return AuthRepositoryImpl(auth, firestore)
+        return AuthRepositoryImpl(auth, firestore, storage)
     }
 
     @Provides

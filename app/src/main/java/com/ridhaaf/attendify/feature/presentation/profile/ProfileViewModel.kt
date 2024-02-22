@@ -1,5 +1,7 @@
 package com.ridhaaf.attendify.feature.presentation.profile
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -58,10 +60,76 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private fun uploadProfilePhoto(context: Context, photo: Uri) {
+        viewModelScope.launch {
+            useCase.uploadProfilePhoto(context, photo).collectLatest { result ->
+                when (result) {
+                    is Resource.Loading -> {
+                        _state.value = _state.value.copy(
+                            isUploadPhotoLoading = true,
+                        )
+                    }
+
+                    is Resource.Success -> {
+                        _state.value = _state.value.copy(
+                            isUploadPhotoLoading = false,
+                            uploadPhotoSuccess = true,
+                        )
+                    }
+
+                    is Resource.Error -> {
+                        _state.value = _state.value.copy(
+                            isUploadPhotoLoading = false,
+                            uploadPhotoSuccess = false,
+                            uploadPhotoError = result.message ?: "Oops, something went wrong!",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun deleteProfilePhoto() {
+        viewModelScope.launch {
+            useCase.deleteProfilePhoto().collectLatest { result ->
+                when (result) {
+                    is Resource.Loading -> {
+                        _state.value = _state.value.copy(
+                            isDeletePhotoLoading = true,
+                        )
+                    }
+
+                    is Resource.Success -> {
+                        _state.value = _state.value.copy(
+                            isDeletePhotoLoading = false,
+                            deletePhotoSuccess = true,
+                        )
+                    }
+
+                    is Resource.Error -> {
+                        _state.value = _state.value.copy(
+                            isDeletePhotoLoading = false,
+                            deletePhotoSuccess = false,
+                            deletePhotoError = result.message ?: "Oops, something went wrong!",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun onEvent(event: ProfileEvent) {
         when (event) {
             is ProfileEvent.Refresh -> {
                 refresh()
+            }
+
+            is ProfileEvent.UploadPhoto -> {
+                uploadProfilePhoto(event.context, event.photo)
+            }
+
+            is ProfileEvent.DeletePhoto -> {
+                deleteProfilePhoto()
             }
         }
     }
