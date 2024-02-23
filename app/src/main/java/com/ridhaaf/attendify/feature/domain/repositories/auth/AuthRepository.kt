@@ -1,5 +1,7 @@
 package com.ridhaaf.attendify.feature.domain.repositories.auth
 
+import android.content.Context
+import android.net.Uri
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.AuthResult
 import com.ridhaaf.attendify.core.utils.Resource
@@ -25,4 +27,8 @@ interface AuthRepository {
     fun signOut(): Flow<Resource<Unit>>
 
     fun getCurrentUser(): Flow<Resource<User>>
+
+    fun uploadProfilePhoto(context: Context, photo: Uri): Flow<Resource<Boolean>>
+
+    fun deleteProfilePhoto(): Flow<Resource<Boolean>>
 }

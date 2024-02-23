@@ -1,22 +1,32 @@
 package com.ridhaaf.attendify.feature.data.repositories.auth
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.ridhaaf.attendify.core.utils.Resource
 import com.ridhaaf.attendify.feature.data.models.auth.User
 import com.ridhaaf.attendify.feature.domain.repositories.auth.AuthRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
+import java.util.UUID
 import javax.inject.Inject
 
 class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage,
 ) : AuthRepository {
     override fun isAuthenticated(): Flow<Resource<Boolean>> = flow {
         try {
@@ -140,6 +150,86 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun uploadProfilePhoto(context: Context, photo: Uri): Flow<Resource<Boolean>> = flow {
+        try {
+            emit(Resource.Loading())
+
+            // Convert the Uri to a Bitmap
+            val photoBitmap =
+                BitmapFactory.decodeStream(context.contentResolver.openInputStream(photo))
+                    ?: throw NullPointerException("Failed to choose photo, please try again")
+
+            // Compress the Bitmap
+            val compressedPhotoBitmap = Bitmap.createScaledBitmap(
+                photoBitmap,
+                512,
+                512,
+                true,
+            )
+
+            // Convert the Bitmap to bytes
+            val data = ByteArrayOutputStream().use { baos ->
+                compressedPhotoBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                baos.toByteArray()
+            }
+
+            val storagePath = "user"
+            val userId = auth.currentUser?.uid ?: throw NullPointerException("User ID is null")
+            val filename = "${UUID.randomUUID()}.jpg"
+
+            // Upload the photo to Firebase Storage
+            val storageRef = storage.reference.child("$storagePath/$userId/$filename")
+            storageRef.putBytes(data).await()
+
+            val url = storageRef.downloadUrl.await().toString()
+            println("url: $url")
+
+            updateUserProfilePhoto(userId, url)
+
+            emit(Resource.Success(true))
+        } catch (e: Exception) {
+            println("Err: ${e.localizedMessage}")
+            emit(
+                Resource.Error(
+                    e.localizedMessage ?: "Upload photo failed, please try again later"
+                )
+            )
+        }
+    }.flowOn(Dispatchers.IO)
+
+    override fun deleteProfilePhoto(): Flow<Resource<Boolean>> = flow {
+        try {
+            emit(Resource.Loading())
+
+            val userId = auth.currentUser?.uid ?: throw NullPointerException("User ID is null")
+            val userDocRef = usersCollection().document(userId)
+
+            // Retrieve the user document and the photo URL
+            val userSnapshot = userDocRef.get().await()
+            val photoUrl = userSnapshot.getString("photoUrl")
+
+            if (photoUrl.isNullOrBlank()) {
+                emit(Resource.Error("No photo to delete"))
+                return@flow
+            }
+
+            // Delete the photo from Firebase Storage
+            val storageRef = storage.getReferenceFromUrl(photoUrl)
+            storageRef.delete().await()
+
+            // Update the user profile to remove the photo URL
+            updateUserProfilePhoto(userId, null)
+
+            emit(Resource.Success(true))
+        } catch (e: Exception) {
+            emit(
+                Resource.Error(
+                    e.localizedMessage ?: "Delete photo failed, please try again later"
+                )
+            )
+        }
+    }.flowOn(Dispatchers.IO)
+
     private suspend fun insertUser(
         id: String,
         name: String,
@@ -156,6 +246,16 @@ class AuthRepositoryImpl @Inject constructor(
             "createdAt" to now,
         )
         usersCollection().document(id).set(user).await()
+    }
+
+    private suspend fun updateUserProfilePhoto(
+        id: String,
+        photoUrl: String? = null,
+    ) {
+        val user = mutableMapOf<String, Any?>()
+
+        user["photoUrl"] = photoUrl as Any?
+        usersCollection().document(id).update(user).await()
     }
 
     private fun usersCollection(): CollectionReference {
